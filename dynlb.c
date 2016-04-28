@@ -32,7 +32,7 @@ SOFTWARE.
 
 void dynlb_morton_balance (int n, REAL *point[3], int ranks[])
 {
-  int size, rank, *vn, *dn, gn, i, j, k, m, *gorder, *granks;
+  int size, rank, *vn, *dn, gn, i, j, k, m, r, *gorder, *granks;
   REAL *gpoint[3];
 
   MPI_Comm_size (MPI_COMM_WORLD, &size);
@@ -79,19 +79,16 @@ void dynlb_morton_balance (int n, REAL *point[3], int ranks[])
 
     m = gn / size;
 
+    r = gn % size;
+
     for (i = j = 0; j < size; j ++)
     {
-      for (k = 0; k < m; k ++, i ++)
+      for (k = 0; k < m + (r ? 1 : 0); k ++, i ++) /* remainder r is distributed to first r ranks */
       {
 	granks[gorder[i]] = j;
       }
-    }
 
-    m = gn % size;
-
-    for (k = 0; k < m; k++, i ++) /* remainder m is distributed to first m ranks */
-    {
-      granks[gorder[i]] = k;
+      if (r) r --; /* decrement remainder */
     }
 
 #if DEBUG
