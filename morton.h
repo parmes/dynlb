@@ -1,7 +1,7 @@
 /*
 The MIT License (MIT)
 
-Copyright (c) 2015 Tomasz Koziara
+Copyright (c) 2016 Tomasz Koziara
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,37 +22,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-/* aligned real allocator */
-export uniform REAL * uniform  aligned_real_alloc (uniform int n)
-{
-  return uniform new uniform REAL [n];
-}
+#ifndef __morton__
+#define __morton__
 
-export void aligned_real_free (uniform REAL * uniform ptr)
-{
-  delete ptr;
-}
+/* morton ordering */
+void morton_ordering (uniform int ntasks, uniform int n, uniform REAL * uniform point[3], uniform unsigned int code[], uniform int order[]);
 
-/* aligned int allocator */
-export uniform int * uniform  aligned_int_alloc (uniform int n)
-{
-  return uniform new uniform int [n];
-}
-
-export void aligned_int_free (uniform int * uniform ptr)
-{
-  delete ptr;
-}
-
-/* aligned unsigned int allocator */
-export uniform unsigned int * uniform  aligned_uint_alloc (uniform int n)
-{
-  typedef unsigned int uint;
-
-  return uniform new uniform uint [n];
-}
-
-export void aligned_uint_free (uniform unsigned int * uniform ptr)
-{
-  delete ptr;
-}
+#endif

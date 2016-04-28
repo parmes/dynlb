@@ -18,7 +18,7 @@ CPP_OBJS=$(addprefix objs/, $(CPP_SRC:.cpp=.o))
 C_OBJS=$(addprefix objs/, $(C_SRC:.c=.o))
 LIBS=-lm
 
-default: dirs $(ISPC_HEADERS) $(CPP_OBJS) $(C_OBJS) $(EXE)
+default: dirs $(ISPC_HEADERS) $(CPP_OBJS) $(C_OBJS) $(LIB).a $(EXE)
 
 .PHONY: dirs clean print
 
@@ -35,8 +35,12 @@ del:
 	find ./ -iname "*.dump" -exec rm '{}' ';'
 
 clean:
-	/bin/rm -rf objs *~ $(EXE) *.dSYM
+	/bin/rm -rf objs *~ $(EXE) *.dSYM $(LIB).a
 	find ./ -iname "*.dump" -exec rm '{}' ';'
+
+$(LIB).a: $(CPP_OBJS) $(C_OBJS) $(ISPC_OBJS)
+	ar rcv $@ $(CPP_OBJS) $(C_OBJS) $(ISPC_OBJS)
+	ranlib $@ 
 
 $(EXE): $(CPP_OBJS) $(C_OBJS) $(ISPC_OBJS)
 	$(CXX) $(CFLAGS) -fopenmp -o $@ $^ $(LIBS)

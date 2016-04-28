@@ -96,7 +96,7 @@ task void morton (uniform int span, uniform int n, uniform REAL x[], uniform REA
 }
 
 /* morton ordering */
-export void morton_ordering (uniform int n, uniform REAL * uniform point[3], uniform int order[], uniform int ntasks)
+export void morton_ordering (uniform int ntasks, uniform int n, uniform REAL * uniform point[3], uniform unsigned int code[], uniform int order[])
 {
   uniform int num = ntasks < 1 ? num_cores () : ntasks;
   uniform int span = n / num;
@@ -118,16 +118,13 @@ export void morton_ordering (uniform int n, uniform REAL * uniform point[3], uni
     if (e[5] > extents[5]) extents[5] = e[5];
   }
 
-  uniform uint * uniform code = uniform new uniform uint [n];
-
   launch[ntasks] morton (span, n, point[0], point[1], point[2], extents, code);
   sync;
 
   foreach (k = 0 ... n) order[k] = k;
 
   if (n < 10000) quick_sort (n, code, order);
-  else radix_sort (n, code, order, ntasks);
+  else radix_sort (ntasks, n, code, order);
 
   delete extents;
-  delete code;
 }

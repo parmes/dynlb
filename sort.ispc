@@ -176,7 +176,7 @@ static void prefix_sum (uniform int num, uniform int h[])
 }
 
 /* parallel radix sort on unsigned integers */
-void radix_sort (uniform int n, uniform unsigned int code[], uniform int order[], uniform int ntasks)
+export void radix_sort (uniform int ntasks, uniform int n, uniform unsigned int code[], uniform int order[])
 {
   uniform int num = ntasks < 1 ? num_cores () : ntasks;
   uniform int span = n / num;
@@ -239,7 +239,7 @@ void radix_sort (uniform int n, uniform unsigned int code[], uniform int order[]
 }
 
 /* serial quick sort on unsigned integers */
-void quick_sort (uniform int n, uniform unsigned int a[], uniform int order[])
+export void quick_sort (uniform int n, uniform unsigned int a[], uniform int order[])
 {
   uniform unsigned int p, t;
   uniform int i, j;

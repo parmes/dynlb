@@ -1,7 +1,7 @@
 /*
 The MIT License (MIT)
 
-Copyright (c) 2015 Tomasz Koziara
+Copyright (c) 2016 Tomasz Koziara
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,37 +22,27 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-/* aligned real allocator */
-export uniform REAL * uniform  aligned_real_alloc (uniform int n)
-{
-  return uniform new uniform REAL [n];
-}
+#ifndef __dynlb__
+#define __dynlb__
 
-export void aligned_real_free (uniform REAL * uniform ptr)
-{
-  delete ptr;
-}
+/* simple morton ordering based point balancer */
+void dynlb_morton_balance (int n, REAL *point[3], int ranks[]);
 
-/* aligned int allocator */
-export uniform int * uniform  aligned_int_alloc (uniform int n)
-{
-  return uniform new uniform int [n];
-}
+typedef void* dynlb; /* dynlb interface */
 
-export void aligned_int_free (uniform int * uniform ptr)
-{
-  delete ptr;
-}
+/* create balancer */
+dynlb dynlb_create (int ntasks, int n, REAL *point[3]);
 
-/* aligned unsigned int allocator */
-export uniform unsigned int * uniform  aligned_uint_alloc (uniform int n)
-{
-  typedef unsigned int uint;
+/* assign MPI rank to a point; return rank */
+int dynlb_point_assign (dynlb lb, REAL point[]);
 
-  return uniform new uniform uint [n];
-}
+/* assign MPI ranks to a box spanned between lo and hi points; return number of ranks */
+int dynlb_box_assign (dynlb lb, REAL lo[], REAL hi[], int ranks[]);
 
-export void aligned_uint_free (uniform unsigned int * uniform ptr)
-{
-  delete ptr;
-}
+/* update balancer */
+void dynlb_update (dynlb lb, int n, REAL *point[3]);
+
+/* destroy balancer */
+void dynlb_destroy (dynlb lb);
+
+#endif

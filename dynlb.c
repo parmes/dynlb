@@ -1,7 +1,7 @@
 /*
 The MIT License (MIT)
 
-Copyright (c) 2015 Tomasz Koziara
+Copyright (c) 2016 Tomasz Koziara
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -29,10 +29,14 @@ SOFTWARE.
 #include "macros.h"
 #include "morton_ispc.h"
 #include "alloc_ispc.h"
+#include "part_ispc.h"
+#include "dynlb.h"
 
+/* simple morton ordering based point balancer */
 void dynlb_morton_balance (int n, REAL *point[3], int ranks[])
 {
   int size, rank, *vn, *dn, gn, i, j, k, m, r, *gorder, *granks;
+  unsigned int *gcode;
   REAL *gpoint[3];
 
   MPI_Comm_size (MPI_COMM_WORLD, &size);
@@ -71,9 +75,11 @@ void dynlb_morton_balance (int n, REAL *point[3], int ranks[])
 
   if (rank == 0)
   {
+    ERRMEM (gcode = aligned_uint_alloc (gn));
+
     ERRMEM (gorder = aligned_int_alloc (gn));
 
-    morton_ordering (gn, gpoint, gorder, 0);
+    morton_ordering (0, gn, gpoint, gcode, gorder);
 
     ERRMEM (granks = aligned_int_alloc (gn));
 
@@ -139,6 +145,7 @@ void dynlb_morton_balance (int n, REAL *point[3], int ranks[])
   {
     aligned_int_free (granks);
     aligned_int_free (gorder);
+    aligned_uint_free (gcode);
     aligned_real_free (gpoint[0]);
     aligned_real_free (gpoint[1]);
     aligned_real_free (gpoint[2]);
@@ -147,55 +154,104 @@ void dynlb_morton_balance (int n, REAL *point[3], int ranks[])
   }
 }
 
-int main (int argc, char *argv[])
+struct dynlb /* load balancer interface */
 {
-  int m, n, i, *ranks, rank;
-  REAL *point[3];
+  int ntasks;
+  int cutoff;
+  struct partitioning *ptree;
+  int ptree_size;
+  int leaf_count;
+};
 
-  MPI_Init (&argc, &argv);
+/* create balancer */
+dynlb dynlb_create (int ntasks, int n, REAL *point[3])
+{
+  int size, rank, *vn, *dn, gn, i;
+  struct partitioning *ptree;
+  REAL *gpoint[3];
+  int tree_size;
+  int leaf_count;
+  int cutoff;
 
+  MPI_Comm_size (MPI_COMM_WORLD, &size);
   MPI_Comm_rank (MPI_COMM_WORLD, &rank);
 
-  srand(time(NULL) + rank);
-
-  if (argc == 2) m = atoi(argv[1]);
+  if (rank == 0)
+  {
+    ERRMEM (vn = malloc (size * sizeof(int)));
+  }
   else
   {
-    printf ("SYNOPSIS: dynlb max_domain_size\n");
-    return 1;
+    vn = NULL;
   }
 
-  n = rand() % m + 1;
+  MPI_Gather (&n, 1, MPI_INT, vn, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
-  ERRMEM (point[0] = malloc (n * sizeof (REAL)));
-  ERRMEM (point[1] = malloc (n * sizeof (REAL)));
-  ERRMEM (point[2] = malloc (n * sizeof (REAL)));
-  ERRMEM (ranks = malloc (n * sizeof (int)));
-
-  for (i = 0; i < n; i ++)
+  if (rank == 0)
   {
-    point[0][i] = DRAND();
-    point[1][i] = DRAND();
-    point[2][i] = DRAND();
+
+    ERRMEM (dn = malloc (size * sizeof(int)));
+
+    for (gn = i = 0; i < size; i ++)
+    {
+      dn[i] = gn;
+      gn += vn[i];
+    }
+
+    ERRMEM (gpoint[0] = aligned_real_alloc (gn));
+    ERRMEM (gpoint[1] = aligned_real_alloc (gn));
+    ERRMEM (gpoint[2] = aligned_real_alloc (gn));
   }
 
-  dynlb_morton_balance (n, point, ranks);
+  MPI_Gatherv (point[0], n, MPI_INT, gpoint[0], vn, dn, MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Gatherv (point[1], n, MPI_INT, gpoint[1], vn, dn, MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Gatherv (point[2], n, MPI_INT, gpoint[2], vn, dn, MPI_INT, 0, MPI_COMM_WORLD);
 
-  printf ("rank %d size %d export ranks: ", rank, n);
-
-  for (i = 0; i < n; i ++)
+  if (rank == 0)
   {
-    printf ("%d ", ranks[i]);
+    cutoff = (gn / size) / 8; /* TODO */
+
+    ptree = partitioning_create (0, gn, gpoint, cutoff, &tree_size, &leaf_count);
+
+    partitioning_assign_ranks (ptree, size, leaf_count / size, leaf_count % size);
+
+    partitioning_store (0, ptree, gn, gpoint);
+
+    /* TODO: determine initial balance */
   }
 
-  printf ("\n");
+  /* MPI_Scatter (granks, vn, dn, MPI_INT, ranks, n, MPI_INT, 0, MPI_COMM_WORLD); */
 
-  free (point[0]);
-  free (point[1]);
-  free (point[2]);
-  free (ranks);
+  if (rank == 0)
+  {
+    aligned_real_free (gpoint[0]);
+    aligned_real_free (gpoint[1]);
+    aligned_real_free (gpoint[2]);
+    free (dn);
+    free (vn);
+  }
 
-  MPI_Finalize ();
+  return NULL;
+}
 
+/* assign MPI rank to a point; return rank */
+int dynlb_point_assign (dynlb lb, REAL point[])
+{
   return 0;
+}
+
+/* assign MPI ranks to a box spanned between lo and hi points; return number of ranks */
+int dynlb_box_assign (dynlb lb, REAL lo[], REAL hi[], int ranks[])
+{
+  return 0;
+}
+
+/* update balancer */
+void dynlb_update (dynlb lb, int n, REAL *point[3])
+{
+}
+
+/* destroy balancer */
+void dynlb_destroy (dynlb lb)
+{
 }

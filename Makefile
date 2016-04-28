@@ -5,19 +5,22 @@ CC=mpicc
 CXX=mpicxx
 
 # C files
-C_SRC=dynlb.c
+C_SRC=dynlb.c test.c
 
 # C++ files
 CPP_SRC=tasksys.cpp
 
 # ISPC files
-ISPC_SRC=alloc.ispc sort.ispc morton.ispc
+ISPC_SRC=alloc.ispc sort.ispc morton.ispc part.ispc
 
 # ISPC targets
 ISPC_TARGETS=sse2,sse4,avx
 
+# Library name
+LIB=dynlb
+
 # Program name
-EXE=dynlb
+EXE=test_dynlb
 
 # Floating point type
 REAL=float

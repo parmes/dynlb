@@ -22,13 +22,62 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#ifndef __sort__
-#define __sort__
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <mpi.h>
+#include "macros.h"
+#include "dynlb.h"
 
-/* parallel radix sort on unsigned integers */
-void radix_sort (uniform int ntasks, uniform int n, uniform unsigned int code[], uniform int order[]);
+int main (int argc, char *argv[])
+{
+  int m, n, i, *ranks, rank;
+  REAL *point[3];
 
-/* serial quick sort on unsigned integers */
-void quick_sort (uniform int n, uniform unsigned int a[], uniform int order[]);
+  MPI_Init (&argc, &argv);
 
-#endif
+  MPI_Comm_rank (MPI_COMM_WORLD, &rank);
+
+  srand(time(NULL) + rank);
+
+  if (argc == 2) m = atoi(argv[1]);
+  else
+  {
+    printf ("SYNOPSIS: dynlb max_domain_size\n");
+    return 1;
+  }
+
+  n = rand() % m + 1;
+
+  ERRMEM (point[0] = malloc (n * sizeof (REAL)));
+  ERRMEM (point[1] = malloc (n * sizeof (REAL)));
+  ERRMEM (point[2] = malloc (n * sizeof (REAL)));
+  ERRMEM (ranks = malloc (n * sizeof (int)));
+
+  for (i = 0; i < n; i ++)
+  {
+    point[0][i] = DRAND();
+    point[1][i] = DRAND();
+    point[2][i] = DRAND();
+  }
+
+  dynlb_morton_balance (n, point, ranks);
+
+  printf ("rank %d size %d export ranks: ", rank, n);
+
+  for (i = 0; i < n; i ++)
+  {
+    printf ("%d ", ranks[i]);
+  }
+
+  printf ("\n");
+
+  free (point[0]);
+  free (point[1]);
+  free (point[2]);
+  free (ranks);
+
+  MPI_Finalize ();
+
+  return 0;
+}
