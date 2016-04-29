@@ -295,6 +295,35 @@ task void store_points (uniform int span, uniform partitioning ptree[], uniform 
   }
 }
 
+/* assign ranks to partitioning tree leaves */
+export void assign_ranks (uniform partitioning * uniform ptree, uniform int node,
+  uniform int leaves_per_rank, uniform int * uniform remainder,
+  uniform int * uniform leaf, uniform int * uniform rank)
+{
+  if (ptree[node].dimension >= 0) /* node */
+  {
+    assign_ranks (ptree, ptree[node].left, leaves_per_rank, remainder, leaf, rank);
+    assign_ranks (ptree, ptree[node].right, leaves_per_rank, remainder, leaf, rank);
+  }
+  else /* leaf */
+  {
+    ptree[node].rank =  (*rank);
+
+    (*leaf) ++;
+
+    uniform int m = leaves_per_rank + ((*remainder) ? 1 : 0); /* remainder is distributed into initial ranks */
+
+    if ((*leaf) == m) /* finished with this rank */
+    {
+      (*leaf) = 0; /* zero leaf per rank counter */
+
+      (*rank) ++; /* increment rank */
+
+      if ((*remainder)) (*remainder) --; /* if remainder left then decrement it */
+    }
+  }
+}
+
 /* create partitioning tree */
 export uniform partitioning * uniform partitioning_create (uniform int ntasks, uniform int n, uniform REAL * uniform point[3],
   uniform int cutoff, uniform int * uniform tree_size, uniform int * uniform leaf_count)
@@ -341,10 +370,13 @@ export uniform partitioning * uniform partitioning_alloc (uniform int tree_size)
 }
 
 /* assign ranks to partitioning tree leaves */
-export void partitioning_assign_ranks (uniform partitioning * uniform ptree,
-  uniform int total_ranks, uniform int ranks_per_leaf, uniform int remainder)
+export void partitioning_assign_ranks (uniform partitioning * uniform ptree, uniform int leaves_per_rank, uniform int remainder)
 {
-  /* TODO */
+  uniform int leaf = 0;
+
+  uniform int rank = 0;
+
+  assign_ranks (ptree, 0, leaves_per_rank, &remainder, &leaf, &rank);
 }
 
 /* store points in the partitioning tree leaves */
@@ -353,6 +385,53 @@ export void partitioning_store (uniform int ntasks, uniform partitioning * unifo
   partitioning_tree_zero (ptree, 0);
 
   launch [ntasks] store_points (n/ntasks, ptree, n, point);
+}
+
+/* assign leaf rank to a point */
+export uniform int partitioning_point_assign (uniform partitioning ptree[], uniform int node, uniform REAL point[])
+{
+  uniform int d = ptree[node].dimension;
+
+  if (d >= 0) /* node */
+  {
+    if (point[d] < ptree[node].coord) /* "<" is congruent with the selection of coord in radix_tree_create */
+      return partitioning_point_assign (ptree, ptree[node].left, point);
+    else return partitioning_point_assign (ptree, ptree[node].right, point);
+  }
+  else /* leaf */
+  {
+    return ptree[node].rank;
+  }
+}
+
+/* assign leaf ranks to a box */
+export void partitioning_box_assign (uniform partitioning ptree[], uniform int node,
+  uniform REAL lo[], uniform REAL hi[], uniform int ranks[], uniform int * uniform count)
+{
+  uniform int d = ptree[node].dimension;
+
+  if (d >= 0) /* node */
+  {
+    if (lo[d] < ptree[node].coord) /* "<" is congruent with the selection of coord in radix_tree_create */
+      partitioning_box_assign (ptree, ptree[node].left, lo, hi, ranks, count);
+    if (hi[d] > ptree[node].coord)
+      partitioning_box_assign (ptree, ptree[node].right, lo, hi, ranks, count);
+  }
+  else /* leaf */
+  {
+    uniform int i, r = ptree[node].rank;
+    
+    for (i = 0; i < (*count); i ++)
+    {
+      if (ranks[i] == r) break;
+    }
+
+    if (i == (*count))
+    {
+      ranks[i] = r;
+      (*count) ++;
+    }
+  }
 }
 
 /* destroy partitioning tree */

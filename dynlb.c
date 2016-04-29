@@ -25,6 +25,7 @@ SOFTWARE.
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <limits.h>
 #include <mpi.h>
 #include "macros.h"
 #include "morton_ispc.h"
@@ -154,24 +155,19 @@ void dynlb_morton_balance (int n, REAL *point[3], int ranks[])
   }
 }
 
-struct dynlb /* load balancer interface */
-{
-  int ntasks;
-  int cutoff;
-  struct partitioning *ptree;
-  int ptree_size;
-  int leaf_count;
-};
-
 /* create balancer */
-dynlb dynlb_create (int ntasks, int n, REAL *point[3])
+struct dynlb* dynlb_create (int ntasks, int n, REAL *point[3], int cutoff, REAL epsilon)
 {
-  int size, rank, *vn, *dn, gn, i;
+  int size, rank, *vn, *dn, gn, i, *rank_size;
   struct partitioning *ptree;
+  struct dynlb *lb;
   REAL *gpoint[3];
-  int tree_size;
   int leaf_count;
-  int cutoff;
+
+  ERRMEM (lb = malloc (sizeof(struct dynlb)));
+  lb->ntasks = ntasks;
+  lb->cutoff = cutoff;
+  lb->epsilon = epsilon;
 
   MPI_Comm_size (MPI_COMM_WORLD, &size);
   MPI_Comm_rank (MPI_COMM_WORLD, &rank);
@@ -207,20 +203,60 @@ dynlb dynlb_create (int ntasks, int n, REAL *point[3])
   MPI_Gatherv (point[1], n, MPI_INT, gpoint[1], vn, dn, MPI_INT, 0, MPI_COMM_WORLD);
   MPI_Gatherv (point[2], n, MPI_INT, gpoint[2], vn, dn, MPI_INT, 0, MPI_COMM_WORLD);
 
+  ERRMEM (rank_size = calloc (size, sizeof (int)));
+
   if (rank == 0)
   {
-    cutoff = (gn / size) / 8; /* TODO */
+    ptree = partitioning_create (ntasks, gn, gpoint, cutoff, &lb->ptree_size, &leaf_count);
 
-    ptree = partitioning_create (0, gn, gpoint, cutoff, &tree_size, &leaf_count);
+    partitioning_assign_ranks (ptree, leaf_count / size, leaf_count % size);
 
-    partitioning_assign_ranks (ptree, size, leaf_count / size, leaf_count % size);
+    partitioning_store (ntasks, ptree, gn, gpoint);
 
-    partitioning_store (0, ptree, gn, gpoint);
+    /* determine initial balance */
 
-    /* TODO: determine initial balance */
+    for (i = 0; i < lb->ptree_size; i ++)
+    {
+      if (ptree[i].dimension < 0) /* leaf */
+      {
+	rank_size[ptree[i].rank] += ptree[i].size;
+      }
+    }
+
+    int min_size = INT_MAX, max_size = 0;
+
+    for (i = 0; i < size; i ++)
+    {
+      min_size = MIN (min_size, rank_size[i]);
+      max_size = MAX (max_size, rank_size[i]);
+    }
+
+    lb->initial = (REAL)max_size/(REAL)min_size;
+
+    lb->imbalance = lb->initial;
+
   }
 
-  /* MPI_Scatter (granks, vn, dn, MPI_INT, ranks, n, MPI_INT, 0, MPI_COMM_WORLD); */
+  /* scatter ptree_size and initial imbalance */
+  MPI_Scatter (lb, sizeof(struct dynlb), MPI_BYTE, lb, sizeof(struct dynlb), MPI_BYTE, 0, MPI_COMM_WORLD);
+
+  /* scatter rank_size and update lb->npoint */
+  MPI_Scatter (rank_size, size * sizeof (int), MPI_INT, rank_size, size * sizeof(int), MPI_INT, 0, MPI_COMM_WORLD);
+
+  lb->npoint = rank_size[rank];
+
+  if (rank == 0)
+  {
+    lb->ptree = ptree;
+  }
+  else
+  {
+    lb->ptree = partitioning_alloc (lb->ptree_size);
+  }
+
+  /* scatter ptree */
+  MPI_Scatter (lb->ptree, lb->ptree_size*sizeof(struct partitioning), MPI_BYTE,
+    lb->ptree, lb->ptree_size*sizeof(struct partitioning), MPI_BYTE, 0, MPI_COMM_WORLD);
 
   if (rank == 0)
   {
@@ -231,27 +267,86 @@ dynlb dynlb_create (int ntasks, int n, REAL *point[3])
     free (vn);
   }
 
-  return NULL;
+  free (rank_size);
+
+  return lb;
 }
 
 /* assign MPI rank to a point; return rank */
-int dynlb_point_assign (dynlb lb, REAL point[])
+int dynlb_point_assign (struct dynlb *lb, REAL point[])
 {
-  return 0;
+  return partitioning_point_assign (lb->ptree, 0, point);
 }
 
 /* assign MPI ranks to a box spanned between lo and hi points; return number of ranks */
-int dynlb_box_assign (dynlb lb, REAL lo[], REAL hi[], int ranks[])
+int dynlb_box_assign (struct dynlb *lb, REAL lo[], REAL hi[], int ranks[])
 {
-  return 0;
+  int count = 0;
+
+  partitioning_box_assign (lb->ptree, 0, lo, hi, ranks, &count);
+
+  return count;
 }
 
 /* update balancer */
-void dynlb_update (dynlb lb, int n, REAL *point[3])
+void dynlb_update (struct dynlb *lb, int n, REAL *point[3])
 {
+  int i, rank, size, *local_size, *rank_size;
+  struct partitioning *ptree = lb->ptree;
+
+  MPI_Comm_size (MPI_COMM_WORLD, &size);
+  MPI_Comm_rank (MPI_COMM_WORLD, &rank);
+
+  partitioning_store (lb->ntasks, ptree, n, point);
+
+  ERRMEM (local_size = calloc (size, sizeof (int)));
+
+  ERRMEM (rank_size = calloc (size, sizeof (int)));
+
+  for (i = 0; i < lb->ptree_size; i ++)
+  {
+    if (ptree[i].dimension < 0) /* leaf */
+    {
+      local_size[ptree[i].rank] += ptree[i].size;
+    }
+  }
+
+  /* reduce global sizes per rank */
+  MPI_Allreduce (local_size, rank_size, size, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+
+  lb->npoint = rank_size[rank];
+
+  int min_size = INT_MAX, max_size = 0;
+
+  for (i = 0; i < size; i ++)
+  {
+    min_size = MIN (min_size, rank_size[i]);
+    max_size = MAX (max_size, rank_size[i]);
+  }
+
+  lb->imbalance = (REAL)max_size/(REAL)min_size;
+
+  free (rank_size);
+
+  if (lb->imbalance > lb->initial+lb->epsilon) /* update partitioning */
+  {
+    struct dynlb *dy = dynlb_create (lb->ntasks, n, point, lb->cutoff, lb->epsilon);
+
+    partitioning_destroy (lb->ptree);
+    lb->ptree = dy->ptree;
+    lb->ptree_size = dy->ptree_size;
+
+    lb->initial = dy->initial;
+    lb->imbalance = dy->imbalance;
+    lb->npoint = dy->npoint;
+
+    free (dy);
+  }
 }
 
 /* destroy balancer */
-void dynlb_destroy (dynlb lb)
+void dynlb_destroy (struct dynlb *lb)
 {
+  partitioning_destroy (lb->ptree);
+  free (lb);
 }
