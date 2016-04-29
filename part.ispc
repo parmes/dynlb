@@ -253,12 +253,12 @@ static void partitioning_tree_create (uniform radix_tree rtree[], uniform int rn
 }
 
 /* zero leaf data */
-static void partitioning_tree_zero (uniform struct partitioning ptree[], uniform int node)
+static void zero_leaves (uniform struct partitioning ptree[], uniform int node)
 {
   if (ptree[node].dimension >= 0) /* node */
   {
-    partitioning_tree_zero (ptree, ptree[node].left);
-    partitioning_tree_zero (ptree, ptree[node].right);
+    zero_leaves (ptree, ptree[node].left);
+    zero_leaves (ptree, ptree[node].right);
   }
   else /* leaf */
   {
@@ -339,7 +339,7 @@ export uniform partitioning * uniform partitioning_create (uniform int ntasks, u
 
   uniform radix_tree * uniform rtree = uniform new uniform radix_tree [n];
 
-  launch[ntasks] radix_tree_create (span, n, code, rtree, order, point, cutoff);
+  launch[num] radix_tree_create (span, n, code, rtree, order, point, cutoff);
   sync;
 
   *tree_size = 1;
@@ -382,9 +382,11 @@ export void partitioning_assign_ranks (uniform partitioning * uniform ptree, uni
 /* store points in the partitioning tree leaves */
 export void partitioning_store (uniform int ntasks, uniform partitioning * uniform ptree, uniform int n, uniform REAL * uniform point[3])
 {
-  partitioning_tree_zero (ptree, 0);
+  uniform int num = ntasks < 1 ? num_cores () : ntasks;
 
-  launch [ntasks] store_points (n/ntasks, ptree, n, point);
+  zero_leaves (ptree, 0);
+
+  launch [num] store_points (n/num, ptree, n, point);
 }
 
 /* assign leaf rank to a point */

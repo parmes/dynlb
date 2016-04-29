@@ -61,6 +61,7 @@ int main (int argc, char *argv[])
     point[2][i] = DRAND();
   }
 
+#if 0
   dynlb_morton_balance (n, point, ranks);
 
   printf ("rank %d size %d export ranks: ", rank, n);
@@ -71,6 +72,15 @@ int main (int argc, char *argv[])
   }
 
   printf ("\n");
+#else
+  printf ("rank %d n = %d\n", rank, n);
+
+  struct dynlb *lb = dynlb_create (0, n, point, 4, 0.5);
+
+  if (rank == 0) printf ("dynlb initial balance = %g\n", lb->initial);
+
+  printf ("rank %d npoint = %d\n", rank, lb->npoint);
+#endif
 
   free (point[0]);
   free (point[1]);

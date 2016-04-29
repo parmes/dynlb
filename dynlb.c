@@ -213,6 +213,30 @@ struct dynlb* dynlb_create (int ntasks, int n, REAL *point[3], int cutoff, REAL 
 
     partitioning_store (ntasks, ptree, gn, gpoint);
 
+#if DEBUG
+    printf ("leaf count = %d\n", leaf_count);
+
+    printf ("leaf ranks: ");
+    for (i = 0; i < lb->ptree_size; i ++)
+    {
+      if (ptree[i].dimension < 0) /* leaf */
+      {
+	printf ("%d ", ptree[i].rank);
+      }
+    }
+    printf ("\n");
+
+    printf ("leaf sizes: ");
+    for (i = 0; i < lb->ptree_size; i ++)
+    {
+      if (ptree[i].dimension < 0) /* leaf */
+      {
+	printf ("%d ", ptree[i].size);
+      }
+    }
+    printf ("\n");
+#endif
+
     /* determine initial balance */
 
     for (i = 0; i < lb->ptree_size; i ++)
@@ -237,11 +261,11 @@ struct dynlb* dynlb_create (int ntasks, int n, REAL *point[3], int cutoff, REAL 
 
   }
 
-  /* scatter ptree_size and initial imbalance */
-  MPI_Scatter (lb, sizeof(struct dynlb), MPI_BYTE, lb, sizeof(struct dynlb), MPI_BYTE, 0, MPI_COMM_WORLD);
+  /* broadcast ptree_size and initial imbalance */
+  MPI_Bcast (lb, sizeof(struct dynlb), MPI_BYTE, 0, MPI_COMM_WORLD);
 
-  /* scatter rank_size and update lb->npoint */
-  MPI_Scatter (rank_size, size * sizeof (int), MPI_INT, rank_size, size * sizeof(int), MPI_INT, 0, MPI_COMM_WORLD);
+  /* broadcast rank_size and update lb->npoint */
+  MPI_Bcast (rank_size, size * sizeof(int), MPI_INT, 0, MPI_COMM_WORLD);
 
   lb->npoint = rank_size[rank];
 
@@ -254,9 +278,8 @@ struct dynlb* dynlb_create (int ntasks, int n, REAL *point[3], int cutoff, REAL 
     lb->ptree = partitioning_alloc (lb->ptree_size);
   }
 
-  /* scatter ptree */
-  MPI_Scatter (lb->ptree, lb->ptree_size*sizeof(struct partitioning), MPI_BYTE,
-    lb->ptree, lb->ptree_size*sizeof(struct partitioning), MPI_BYTE, 0, MPI_COMM_WORLD);
+  /* broadcast ptree */
+  MPI_Bcast (lb->ptree, lb->ptree_size*sizeof(struct partitioning), MPI_BYTE, 0, MPI_COMM_WORLD);
 
   if (rank == 0)
   {
