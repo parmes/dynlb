@@ -75,9 +75,13 @@ int main (int argc, char *argv[])
 #else
   printf ("rank %d n = %d\n", rank, n);
 
-  struct dynlb *lb = dynlb_create (0, n, point, 4, 0.5);
+  struct dynlb *lb = dynlb_create (0, n, point, 0, 0.5);
 
   if (rank == 0) printf ("dynlb initial balance = %g\n", lb->initial);
+
+  dynlb_update (lb, n, point);
+
+  if (rank == 0) printf ("dynlb updated balance = %g\n", lb->imbalance);
 
   printf ("rank %d npoint = %d\n", rank, lb->npoint);
 #endif

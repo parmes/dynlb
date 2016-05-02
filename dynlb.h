@@ -31,7 +31,7 @@ void dynlb_morton_balance (int n, REAL *point[3], int ranks[]);
 struct dynlb /* load balancer interface */
 {
   int ntasks; /* number of taks used; 0 means use hardware optimum */
-  int cutoff; /* partitioning tree cutoff */
+  int cutoff; /* partitioning tree cutoff; 0 means use default selection */
   REAL epsilon; /* imbalance epsilon; rebalance when current imbalance > initial imbalance + epsilon */
 
   void *ptree; /* partitioning tree; used internally */
@@ -42,19 +42,19 @@ struct dynlb /* load balancer interface */
   int npoint; /* current number of points on this MPI rank */
 };
 
-/* create balancer */
+/* create load balancer */
 struct dynlb* dynlb_create (int ntasks, int n, REAL *point[3], int cutoff, REAL epsilon);
 
-/* assign MPI rank to a point; return rank */
+/* assign an MPI rank to a point; return this rank */
 int dynlb_point_assign (struct dynlb *lb, REAL point[]);
 
-/* assign MPI ranks to a box spanned between lo and hi points; return number of ranks */
+/* assign MPI ranks to a box spanned between lo and hi points; return the number of ranks assigned */
 int dynlb_box_assign (struct dynlb *lb, REAL lo[], REAL hi[], int ranks[]);
 
-/* update balancer */
+/* update load balancer */
 void dynlb_update (struct dynlb *lb, int n, REAL *point[3]);
 
-/* destroy balancer */
+/* destroy load balancer */
 void dynlb_destroy (struct dynlb *lb);
 
 #endif

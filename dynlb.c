@@ -155,7 +155,7 @@ void dynlb_morton_balance (int n, REAL *point[3], int ranks[])
   }
 }
 
-/* create balancer */
+/* create load balancer */
 struct dynlb* dynlb_create (int ntasks, int n, REAL *point[3], int cutoff, REAL epsilon)
 {
   int size, rank, *vn, *dn, gn, i, *rank_size;
@@ -207,6 +207,11 @@ struct dynlb* dynlb_create (int ntasks, int n, REAL *point[3], int cutoff, REAL 
 
   if (rank == 0)
   {
+    if (cutoff <= 0)
+    {
+      cutoff = gn/size/64; /* more than 64 drives initial imbalance down while increasing local tree size */
+    }
+
     ptree = partitioning_create (ntasks, gn, gpoint, cutoff, &lb->ptree_size, &leaf_count);
 
     partitioning_assign_ranks (ptree, leaf_count / size, leaf_count % size);
@@ -265,7 +270,7 @@ struct dynlb* dynlb_create (int ntasks, int n, REAL *point[3], int cutoff, REAL 
   MPI_Bcast (lb, sizeof(struct dynlb), MPI_BYTE, 0, MPI_COMM_WORLD);
 
   /* broadcast rank_size and update lb->npoint */
-  MPI_Bcast (rank_size, size * sizeof(int), MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Bcast (rank_size, size, MPI_INT, 0, MPI_COMM_WORLD);
 
   lb->npoint = rank_size[rank];
 
@@ -295,13 +300,13 @@ struct dynlb* dynlb_create (int ntasks, int n, REAL *point[3], int cutoff, REAL 
   return lb;
 }
 
-/* assign MPI rank to a point; return rank */
+/* assign an MPI rank to a point; return this rank */
 int dynlb_point_assign (struct dynlb *lb, REAL point[])
 {
   return partitioning_point_assign (lb->ptree, 0, point);
 }
 
-/* assign MPI ranks to a box spanned between lo and hi points; return number of ranks */
+/* assign MPI ranks to a box spanned between lo and hi points; return the number of ranks assigned */
 int dynlb_box_assign (struct dynlb *lb, REAL lo[], REAL hi[], int ranks[])
 {
   int count = 0;
@@ -311,7 +316,7 @@ int dynlb_box_assign (struct dynlb *lb, REAL lo[], REAL hi[], int ranks[])
   return count;
 }
 
-/* update balancer */
+/* update load balancer */
 void dynlb_update (struct dynlb *lb, int n, REAL *point[3])
 {
   int i, rank, size, *local_size, *rank_size;
@@ -367,7 +372,7 @@ void dynlb_update (struct dynlb *lb, int n, REAL *point[3])
   }
 }
 
-/* destroy balancer */
+/* destroy load balancer */
 void dynlb_destroy (struct dynlb *lb)
 {
   partitioning_destroy (lb->ptree);

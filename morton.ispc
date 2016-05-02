@@ -101,12 +101,12 @@ export void morton_ordering (uniform int ntasks, uniform int n, uniform REAL * u
   uniform int num = ntasks < 1 ? num_cores () : ntasks;
   uniform int span = n / num;
 
-  uniform REAL * uniform extents = uniform new uniform REAL [6*ntasks];
+  uniform REAL * uniform extents = uniform new uniform REAL [6*num];
 
-  launch[ntasks] extrema (span, n, point[0], point[1], point[2], extents);
+  launch[num] extrema (span, n, point[0], point[1], point[2], extents);
   sync;
 
-  for (uniform int i = 1; i < ntasks; i ++)
+  for (uniform int i = 1; i < num; i ++)
   {
     uniform REAL * uniform e = &extents [6*i];
 
@@ -118,13 +118,13 @@ export void morton_ordering (uniform int ntasks, uniform int n, uniform REAL * u
     if (e[5] > extents[5]) extents[5] = e[5];
   }
 
-  launch[ntasks] morton (span, n, point[0], point[1], point[2], extents, code);
+  launch[num] morton (span, n, point[0], point[1], point[2], extents, code);
   sync;
 
   foreach (k = 0 ... n) order[k] = k;
 
   if (n < 10000) quick_sort (n, code, order);
-  else radix_sort (ntasks, n, code, order);
+  else radix_sort (num, n, code, order);
 
   delete extents;
 }
