@@ -1,7 +1,7 @@
 /*
 The MIT License (MIT)
 
-Copyright (c) 2016 Tomasz Koziara
+Copyright (c) 2015 Tomasz Koziara
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,13 +22,32 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#ifndef __sort__
-#define __sort__
+#include "macros.h"
+#include "rcb.h"
 
-/* parallel radix sort on unsigned integers */
-export void radix_sort (uniform int ntasks, uniform int n, uniform unsigned int code[], uniform int order[]);
+task void dummy (uniform int n, uniform int * uniform i)
+{
+  if (n > 1)
+  {
+    launch dummy (n/2, i);
+    launch dummy (n-n/2, i);
+  }
+  else
+  {
+    atomic_add_global (i, 1);
+    print ("leaf no. %\n", *i);
+  }
+}
 
-/* serial quick sort on unsigned integers */
-export void quick_sort (uniform int n, uniform unsigned int a[], uniform int order[]);
+/* create rcb tree */
+export uniform rcb_tree * uniform rcb_tree_create (uniform int ntasks, uniform int n,
+  uniform REAL * uniform point[3], uniform int cutoff, uniform int * uniform tree_size)
+{
+  return NULL;
+}
 
-#endif
+/* destroy rcb tree */
+export void rcb_tree_destroy (uniform rcb_tree * uniform rcbtree)
+{
+  delete rcbtree;
+}

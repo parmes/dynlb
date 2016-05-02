@@ -156,7 +156,7 @@ void dynlb_morton_balance (int n, REAL *point[3], int ranks[])
 }
 
 /* create load balancer */
-struct dynlb* dynlb_create (int ntasks, int n, REAL *point[3], int cutoff, REAL epsilon)
+struct dynlb* dynlb_create (int ntasks, int n, REAL *point[3], int cutoff, REAL epsilon, enum dynlb_part part)
 {
   int size, rank, *vn, *dn, gn, i, *rank_size;
   struct partitioning *ptree;
@@ -212,7 +212,15 @@ struct dynlb* dynlb_create (int ntasks, int n, REAL *point[3], int cutoff, REAL 
       cutoff = gn/size/64; /* more than 64 drives initial imbalance down while increasing local tree size */
     }
 
-    ptree = partitioning_create (ntasks, gn, gpoint, cutoff, &lb->ptree_size, &leaf_count);
+    switch (part)
+    {
+    case DYNLB_RADIX_TREE:
+      ptree = partitioning_create_radix (ntasks, gn, gpoint, cutoff, &lb->ptree_size, &leaf_count);
+      break;
+    case DYNLB_RCB_TREE:
+      ptree = partitioning_create_rcb (ntasks, gn, gpoint, cutoff, &lb->ptree_size, &leaf_count);
+      break;
+    }
 
     partitioning_assign_ranks (ptree, leaf_count / size, leaf_count % size);
 
@@ -358,7 +366,7 @@ void dynlb_update (struct dynlb *lb, int n, REAL *point[3])
 
   if (lb->imbalance > lb->initial+lb->epsilon) /* update partitioning */
   {
-    struct dynlb *dy = dynlb_create (lb->ntasks, n, point, lb->cutoff, lb->epsilon);
+    struct dynlb *dy = dynlb_create (lb->ntasks, n, point, lb->cutoff, lb->epsilon, lb->part);
 
     partitioning_destroy (lb->ptree);
     lb->ptree = dy->ptree;

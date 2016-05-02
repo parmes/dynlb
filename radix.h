@@ -1,7 +1,7 @@
 /*
 The MIT License (MIT)
 
-Copyright (c) 2016 Tomasz Koziara
+Copyright (c) 2015 Tomasz Koziara
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -22,13 +22,25 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#ifndef __sort__
-#define __sort__
+#ifndef __radix__
+#define __radix__
 
-/* parallel radix sort on unsigned integers */
-export void radix_sort (uniform int ntasks, uniform int n, uniform unsigned int code[], uniform int order[]);
+struct radix_tree /* binary space partitioning radix tree */
+{
+  uniform int parent;
+  uniform int first;
+  uniform int size;
+  uniform int split;
 
-/* serial quick sort on unsigned integers */
-export void quick_sort (uniform int n, uniform unsigned int a[], uniform int order[]);
+  uniform REAL coord;
+  uniform int dimension;
+};
+
+/* create radix tree */
+export uniform radix_tree * uniform radix_tree_create (uniform int ntasks, uniform int n,
+  uniform REAL * uniform point[3], uniform int cutoff, uniform int * uniform tree_size);
+
+/* destroy radix tree */
+export void radix_tree_destroy (uniform radix_tree * uniform rtree);
 
 #endif

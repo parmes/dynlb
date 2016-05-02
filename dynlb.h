@@ -28,11 +28,18 @@ SOFTWARE.
 /* simple morton ordering based point balancer */
 void dynlb_morton_balance (int n, REAL *point[3], int ranks[]);
 
+enum dynlb_part /* space partitioning type */
+{
+  DYNLB_RADIX_TREE, /* radix tree based on morton ordering */
+  DYNLB_RCB_TREE /* recursive coordinate bisection based tree */
+};
+
 struct dynlb /* load balancer interface */
 {
   int ntasks; /* number of taks used; 0 means use hardware optimum */
   int cutoff; /* partitioning tree cutoff; 0 means use default selection */
   REAL epsilon; /* imbalance epsilon; rebalance when current imbalance > initial imbalance + epsilon */
+  enum dynlb_part part; /* partitioning type */
 
   void *ptree; /* partitioning tree; used internally */
   int ptree_size; /* partitioning tree size; used internally */
@@ -43,7 +50,7 @@ struct dynlb /* load balancer interface */
 };
 
 /* create load balancer */
-struct dynlb* dynlb_create (int ntasks, int n, REAL *point[3], int cutoff, REAL epsilon);
+struct dynlb* dynlb_create (int ntasks, int n, REAL *point[3], int cutoff, REAL epsilon, enum dynlb_part part);
 
 /* assign an MPI rank to a point; return this rank */
 int dynlb_point_assign (struct dynlb *lb, REAL point[]);

@@ -11,7 +11,7 @@ C_SRC=dynlb.c test.c
 CPP_SRC=tasksys.cpp
 
 # ISPC files
-ISPC_SRC=alloc.ispc sort.ispc morton.ispc part.ispc
+ISPC_SRC=alloc.ispc sort.ispc morton.ispc radix.ispc rcb.ispc part.ispc
 
 # ISPC targets
 ISPC_TARGETS=sse2,sse4,avx
