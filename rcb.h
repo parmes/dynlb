@@ -1,7 +1,7 @@
 /*
 The MIT License (MIT)
 
-Copyright (c) 2015 Tomasz Koziara
+Copyright (c) 2016 Tomasz Koziara
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -33,7 +33,7 @@ struct rcb_tree /* binary space partitioning recurisve bisection tree */
   uniform int right;
 };
 
-/* create rcb tree */
+/* create rcb tree; uniformly bisect untill leaf size <= cutoff; or if cutoff < 0 then create -cutoff equal size leaves */
 export uniform rcb_tree * uniform rcb_tree_create (uniform int ntasks, uniform int n,
   uniform REAL * uniform point[3], uniform int cutoff, uniform int * uniform tree_size);
 

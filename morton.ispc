@@ -128,3 +128,36 @@ export void morton_ordering (uniform int ntasks, uniform int n, uniform REAL * u
 
   delete extents;
 }
+
+/* task based and vectorized extents of points */
+export void extents_of_points (uniform int ntasks, uniform int n, uniform REAL * uniform point[3], uniform REAL extents[])
+{
+  uniform int num = ntasks < 1 ? num_cores () : ntasks;
+  uniform int span = n / num;
+
+  uniform REAL * uniform task_extents = uniform new uniform REAL [6*num];
+
+  launch[num] extrema (span, n, point[0], point[1], point[2], task_extents);
+  sync;
+
+  extents[0] = task_extents[0];
+  extents[1] = task_extents[1];
+  extents[2] = task_extents[2];
+  extents[3] = task_extents[3];
+  extents[4] = task_extents[4];
+  extents[5] = task_extents[5];
+
+  for (uniform int i = 1; i < num; i ++)
+  {
+    uniform REAL * uniform e = &task_extents [6*i];
+
+    if (e[0] < extents[0]) extents[0] = e[0];
+    if (e[1] < extents[1]) extents[1] = e[1];
+    if (e[2] < extents[2]) extents[2] = e[2];
+    if (e[3] > extents[3]) extents[3] = e[3];
+    if (e[4] > extents[4]) extents[4] = e[4];
+    if (e[5] > extents[5]) extents[5] = e[5];
+  }
+
+  delete task_extents;
+}

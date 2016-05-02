@@ -75,7 +75,7 @@ int main (int argc, char *argv[])
 #else
   printf ("rank %d n = %d\n", rank, n);
 
-  struct dynlb *lb = dynlb_create (0, n, point, 0, 0.5, DYNLB_RADIX_TREE);
+  struct dynlb *lb = dynlb_create (0, n, point, 0, 0.5, DYNLB_RCB_TREE);
 
   if (rank == 0) printf ("dynlb initial balance = %g\n", lb->initial);
 

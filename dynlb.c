@@ -207,18 +207,27 @@ struct dynlb* dynlb_create (int ntasks, int n, REAL *point[3], int cutoff, REAL 
 
   if (rank == 0)
   {
-    if (cutoff <= 0)
-    {
-      cutoff = gn/size/64; /* more than 64 drives initial imbalance down while increasing local tree size */
-    }
-
     switch (part)
     {
     case DYNLB_RADIX_TREE:
+
+      if (cutoff <= 0)
+      {
+	cutoff = gn/size/64; /* more than 64 drives initial imbalance down while increasing local tree size */
+      }
+
       ptree = partitioning_create_radix (ntasks, gn, gpoint, cutoff, &lb->ptree_size, &leaf_count);
+
       break;
     case DYNLB_RCB_TREE:
+
+      if (cutoff <= 0)
+      {
+	cutoff = -size; /* as many leaves as ranks by default */
+      }
+
       ptree = partitioning_create_rcb (ntasks, gn, gpoint, cutoff, &lb->ptree_size, &leaf_count);
+
       break;
     }
 

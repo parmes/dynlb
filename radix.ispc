@@ -83,7 +83,7 @@ inline static uniform REAL mincoord (uniform REAL coord[], uniform int order[], 
 
 /* from https://research.nvidia.com/publication/maximizing-parallelism-construction-bvhs-octrees-and-k-d-trees */
 task void radix_tree_task (uniform int span, uniform int n, uniform unsigned int code[],
-  uniform radix_tree rtree[], uniform int order[], uniform REAL * uniform point[3], uniform int cutoff)
+  uniform radix_tree tree[], uniform int order[], uniform REAL * uniform point[3], uniform int cutoff)
 {
   uniform int start = taskIndex*span;
   uniform int end = taskIndex == taskCount-1 ? n-1: start+span;
@@ -109,14 +109,14 @@ task void radix_tree_task (uniform int span, uniform int n, uniform unsigned int
 
     uniform int j = i+l*d;
 
-    rtree[i].first = d > 0 ? i : j;
-    rtree[i].size = l+1;
+    tree[i].first = d > 0 ? i : j;
+    tree[i].size = l+1;
 
-    if (rtree[i].size <= cutoff) /* create terminal node and copy particle data */
+    if (tree[i].size <= cutoff) /* create terminal node and copy particle data */
     {
-      rtree[i].split = 0;
-      rtree[i].coord = 0.0;
-      rtree[i].dimension = -1; /* mark as terminal node */
+      tree[i].split = 0;
+      tree[i].coord = 0.0;
+      tree[i].dimension = -1; /* mark as terminal node */
     }
     else
     {
@@ -130,52 +130,52 @@ task void radix_tree_task (uniform int span, uniform int n, uniform unsigned int
 	if (t == 1) break;
       }
 
-      rtree[i].split = i+s*d+min(d,0);
+      tree[i].split = i+s*d+min(d,0);
 
-      if (rtree[i].first != rtree[i].split) /* not left leaf => left node */
+      if (tree[i].first != tree[i].split) /* not left leaf => left node */
       {
-	rtree[rtree[i].split].parent = i; /* left node parent */
+	tree[tree[i].split].parent = i; /* left node parent */
       }
 
-      if (rtree[i].first+rtree[i].size-1 != rtree[i].split+1) /* not right leaf => right node */
+      if (tree[i].first+tree[i].size-1 != tree[i].split+1) /* not right leaf => right node */
       {
-	rtree[rtree[i].split+1].parent = i; /* right node parent */
+	tree[tree[i].split+1].parent = i; /* right node parent */
       }
 
       uniform int dimension = (dnode-2)%3;
 
-      rtree[i].coord = mincoord (point[dimension], order, rtree[i].split+1, rtree[i].first+rtree[i].size);
-      rtree[i].dimension = dimension;
+      tree[i].coord = mincoord (point[dimension], order, tree[i].split+1, tree[i].first+tree[i].size);
+      tree[i].dimension = dimension;
     }
   }
 
   if (taskIndex == 0)
   {
-    rtree[0].parent = -1; /* nil root's parent */
+    tree[0].parent = -1; /* nil root's parent */
 
     if (n == 1) /* handle the signe sphere case */
     {
-      rtree[0].first = 0;
-      rtree[0].size = 1;
-      rtree[0].dimension = -1;
+      tree[0].first = 0;
+      tree[0].size = 1;
+      tree[0].dimension = -1;
     }
   }
 }
 
 /* calculate size of the radix tree */
-static void radix_tree_size (uniform radix_tree rtree[], uniform int node, uniform int * uniform size)
+static void radix_tree_size (uniform radix_tree tree[], uniform int node, uniform int * uniform size)
 {
-  if (rtree[node].dimension >= 0) /* node */
+  if (tree[node].dimension >= 0) /* node */
   {
     (*size) += 2; /* two potential siblings */
 
-    uniform int j = rtree[node].split;
+    uniform int j = tree[node].split;
 
-    if (rtree[node].first != j) /* not left leaf */
-      radix_tree_size (rtree, j, size);
+    if (tree[node].first != j) /* not left leaf */
+      radix_tree_size (tree, j, size);
 
-    if ((rtree[node].first+rtree[node].size-1) != (j+1)) /* not right leaf */
-      radix_tree_size (rtree, j+1, size);
+    if ((tree[node].first+tree[node].size-1) != (j+1)) /* not right leaf */
+      radix_tree_size (tree, j+1, size);
   }
 }
 
@@ -192,23 +192,23 @@ export uniform radix_tree * uniform radix_tree_create (uniform int ntasks, unifo
 
   morton_ordering (ntasks, n, point, code, order);
 
-  uniform radix_tree * uniform rtree = uniform new uniform radix_tree [n];
+  uniform radix_tree * uniform tree = uniform new uniform radix_tree [n];
 
-  launch[num] radix_tree_task (span, n, code, rtree, order, point, cutoff);
+  launch[num] radix_tree_task (span, n, code, tree, order, point, cutoff);
   sync;
 
   *tree_size = 1;
 
-  radix_tree_size (rtree, 0, tree_size);
+  radix_tree_size (tree, 0, tree_size);
 
   delete code;
   delete order;
 
-  return rtree;
+  return tree;
 }
 
 /* destroy radix tree */
-export void radix_tree_destroy (uniform radix_tree * uniform rtree)
+export void radix_tree_destroy (uniform radix_tree * uniform tree)
 {
-  delete rtree;
+  delete tree;
 }
