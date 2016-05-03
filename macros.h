@@ -25,6 +25,23 @@ SOFTWARE.
 #ifndef __macros__
 #define __macros__
 
+#if defined MPI_REAL /* prevent warnings */
+#undef MPI_REAL
+#endif
+
+/* real type */
+#if REALE==4
+#undef REAL
+#define REAL float
+#define MPI_REAL MPI_FLOAT
+#define REAL_MAX 3.40282347E+38F
+#else
+#undef REAL
+#define REAL double
+#define MPI_REAL MPI_DOUBLE
+#define REAL_MAX 1.7976931348623157E+308
+#endif
+
 /* textual assertion */
 #define ASSERT(__test__, ...)\
   do {\
@@ -35,17 +52,11 @@ SOFTWARE.
 /* memory validity assertion */
 #define ERRMEM(__pointer__) ASSERT (__pointer__, "Out of memory!");
 
-#define DRAND() ((double) rand () / (double) RAND_MAX)
+#define DRAND() ((REAL) rand () / (REAL) RAND_MAX)
 #define DRANDEXT(x, y) ((x) + ((y) - (x))*DRAND())
 
 #define ALG_PI 3.14159265358979323846 
 #define ALG_SQR2 1.4142135623730951
-
-#if REAL==float
-#define REAL_MAX 3.40282347E+38F
-#else
-#define REAL_MAX 1.7976931348623157E+308
-#endif
 
 #ifndef MIN
   #define MIN(v, w) ((v) < (w) ? (v) : (w))

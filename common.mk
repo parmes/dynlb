@@ -1,7 +1,7 @@
 ifeq ($(REAL),double)
-  REAL=-DREAL=double
+  REAL=-DREAL=8
 else
-  REAL=-DREAL=float
+  REAL=-DREAL=4
 endif
 
 ifeq ($(DEBUG),yes)
@@ -42,7 +42,7 @@ $(LIB).a: $(CPP_OBJS) $(C_OBJS) $(ISPC_OBJS)
 	ar rcv $@ $(CPP_OBJS) $(C_OBJS) $(ISPC_OBJS)
 	ranlib $@ 
 
-$(EXE): $(CPP_OBJS) $(C_OBJS) $(ISPC_OBJS)
+$(EXE): objs/test.o $(CPP_OBJS) $(C_OBJS) $(ISPC_OBJS)
 	$(CXX) $(CFLAGS) -fopenmp -o $@ $^ $(LIBS)
 
 objs/%_ispc.h objs/%_ispc.o objs/%_ispc_sse2.o objs/%_ispc_sse4.o objs/%_ispc_avx.o: %.ispc

@@ -5,7 +5,7 @@ CC=mpicc
 CXX=mpicxx
 
 # C files
-C_SRC=dynlb.c test.c
+C_SRC=dynlb.c
 
 # C++ files
 CPP_SRC=tasksys.cpp

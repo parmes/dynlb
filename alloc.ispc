@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include "macros.h"
+
 /* aligned real allocator */
 export uniform REAL * uniform  aligned_real_alloc (uniform int n)
 {

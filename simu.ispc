@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include "macros.h"
+
 task void step_task (uniform int span, uniform int n, uniform REAL * uniform point[3], uniform REAL * uniform velo[3], uniform REAL step)
 {
   uniform int start = taskIndex*span;

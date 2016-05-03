@@ -70,9 +70,9 @@ void dynlb_morton_balance (int n, REAL *point[3], int ranks[])
     ERRMEM (gpoint[2] = aligned_real_alloc (gn));
   }
 
-  MPI_Gatherv (point[0], n, MPI_INT, gpoint[0], vn, dn, MPI_INT, 0, MPI_COMM_WORLD);
-  MPI_Gatherv (point[1], n, MPI_INT, gpoint[1], vn, dn, MPI_INT, 0, MPI_COMM_WORLD);
-  MPI_Gatherv (point[2], n, MPI_INT, gpoint[2], vn, dn, MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Gatherv (point[0], n, MPI_REAL, gpoint[0], vn, dn, MPI_REAL, 0, MPI_COMM_WORLD);
+  MPI_Gatherv (point[1], n, MPI_REAL, gpoint[1], vn, dn, MPI_REAL, 0, MPI_COMM_WORLD);
+  MPI_Gatherv (point[2], n, MPI_REAL, gpoint[2], vn, dn, MPI_REAL, 0, MPI_COMM_WORLD);
 
   if (rank == 0)
   {
@@ -193,9 +193,9 @@ struct dynlb* dynlb_create (int ntasks, int n, REAL *point[3], int cutoff, REAL 
     ERRMEM (gpoint[2] = aligned_real_alloc (gn));
   }
 
-  MPI_Gatherv (point[0], n, MPI_INT, gpoint[0], vn, dn, MPI_INT, 0, MPI_COMM_WORLD);
-  MPI_Gatherv (point[1], n, MPI_INT, gpoint[1], vn, dn, MPI_INT, 0, MPI_COMM_WORLD);
-  MPI_Gatherv (point[2], n, MPI_INT, gpoint[2], vn, dn, MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Gatherv (point[0], n, MPI_REAL, gpoint[0], vn, dn, MPI_REAL, 0, MPI_COMM_WORLD);
+  MPI_Gatherv (point[1], n, MPI_REAL, gpoint[1], vn, dn, MPI_REAL, 0, MPI_COMM_WORLD);
+  MPI_Gatherv (point[2], n, MPI_REAL, gpoint[2], vn, dn, MPI_REAL, 0, MPI_COMM_WORLD);
 
   ERRMEM (rank_size = calloc (size, sizeof (int)));
 
