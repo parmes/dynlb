@@ -31,7 +31,7 @@ void dynlb_morton_balance (int n, REAL *point[3], int ranks[]);
 enum dynlb_part /* space partitioning type */
 {
   DYNLB_RADIX_TREE, /* radix tree based on morton ordering */
-  DYNLB_RCB_TREE /* recursive coordinate bisection based tree */
+  DYNLB_RCB_TREE /* recursive coordinate bisection tree */
 };
 
 struct dynlb /* load balancer interface */

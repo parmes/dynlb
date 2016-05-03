@@ -97,48 +97,41 @@ void dynlb_morton_balance (int n, REAL *point[3], int ranks[])
 
       if (r) r --; /* decrement remainder */
     }
-
-#if DEBUG
-   printf ("gn = %d\n", gn);
-
-   printf ("gorder = ");
-   for (i = 0; i < gn; i ++)
-   {
-     printf ("%d ", gorder[i]);
-   }
-   printf ("\n");
-
-   printf ("granks = ");
-   for (i = 0; i < gn; i ++)
-   {
-     printf ("%d ", granks[i]);
-   }
-   printf ("\n");
-
-   int *nn = calloc (size, sizeof(int));
-   for (i = 0; i < gn; i ++) nn[granks[i]] ++;
-   printf ("new counts = ");
-   for (i = j = 0; i < size; i ++)
-   {
-     printf ("%d ", nn[i]);
-     j += nn[i];
-   }
-   printf ("\n");
-   free (nn);
-
-   printf ("sumed up new counts = %d\n", j);
-#endif
   }
 
   MPI_Scatterv (granks, vn, dn, MPI_INT, ranks, n, MPI_INT, 0, MPI_COMM_WORLD);
 
-#if DEBUG
-  for (i = 0; i < n; i ++)
+#if 0
+  if (rank == 0)
   {
-    if (ranks[i] < 0 || ranks[i] >= size)
+    printf ("Input size: %d\n", gn);
+
+    printf ("Ordering: ");
+    for (i = 0; i < gn; i ++)
     {
-      ASSERT (0, "Export rank out of bounds");
+      printf ("%d ", gorder[i]);
     }
+    printf ("\n");
+
+    printf ("Assigned ranks: ");
+    for (i = 0; i < gn; i ++)
+    {
+      printf ("%d ", granks[i]);
+    }
+    printf ("\n");
+
+    int *nn = calloc (size, sizeof(int));
+    for (i = 0; i < gn; i ++) nn[granks[i]] ++;
+    printf ("Assigned points per rank: ");
+    for (i = j = 0; i < size; i ++)
+    {
+      printf ("%d ", nn[i]);
+      j += nn[i];
+    }
+    printf ("\n");
+    free (nn);
+
+    printf ("Output size: %d\n", j);
   }
 #endif
 
@@ -168,6 +161,7 @@ struct dynlb* dynlb_create (int ntasks, int n, REAL *point[3], int cutoff, REAL 
   lb->ntasks = ntasks;
   lb->cutoff = cutoff;
   lb->epsilon = epsilon;
+  lb->part = part;
 
   MPI_Comm_size (MPI_COMM_WORLD, &size);
   MPI_Comm_rank (MPI_COMM_WORLD, &rank);
@@ -235,10 +229,10 @@ struct dynlb* dynlb_create (int ntasks, int n, REAL *point[3], int cutoff, REAL 
 
     partitioning_store (ntasks, ptree, gn, gpoint);
 
-#if DEBUG
-    printf ("leaf count = %d\n", leaf_count);
+#if 0
+    printf ("Leaf count: %d\n", leaf_count);
 
-    printf ("leaf ranks: ");
+    printf ("Leaf ranks: ");
     for (i = 0; i < lb->ptree_size; i ++)
     {
       if (ptree[i].dimension < 0) /* leaf */
@@ -248,7 +242,7 @@ struct dynlb* dynlb_create (int ntasks, int n, REAL *point[3], int cutoff, REAL 
     }
     printf ("\n");
 
-    printf ("leaf sizes: ");
+    printf ("Leaf sizes: ");
     for (i = 0; i < lb->ptree_size; i ++)
     {
       if (ptree[i].dimension < 0) /* leaf */

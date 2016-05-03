@@ -28,30 +28,64 @@ SOFTWARE.
 #include <mpi.h>
 #include "macros.h"
 #include "dynlb.h"
+#include "timer.h"
+#include "simu_ispc.h"
+
+double ptimerend (struct timing *t)
+{
+  double local, time;
+
+  local = timerend (t);
+
+  MPI_Allreduce (&local, &time, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+
+  return time;
+}
 
 int main (int argc, char *argv[])
 {
-  int m, n, i, *ranks, rank;
-  REAL *point[3];
+  int max_points_per_rank = 100;
+  int num_time_steps = 100;
+  REAL time_step = 0.001;
+  int n, i, rank, size, *ranks;
+  REAL *point[3], *velo[3];
+  struct timing t;
+  double dt[2], gt[2];
+
+  if (argc == 1)
+  {
+    printf ("SYNOPSIS: dynlb max_points_per_rank [num_time_steps = 100] [time_step = 0.001]\n");
+    return 0;
+  }
+
+  if (argc >= 2) max_points_per_rank = atoi(argv[1]);
+
+  if (argc >= 3) num_time_steps = atoi(argv[2]);
+
+  if (argc >= 4) time_step = atof(argv[3]);
 
   MPI_Init (&argc, &argv);
 
   MPI_Comm_rank (MPI_COMM_WORLD, &rank);
 
+  MPI_Comm_size (MPI_COMM_WORLD, &size);
+
   srand(time(NULL) + rank);
 
-  if (argc == 2) m = atoi(argv[1]);
-  else
-  {
-    printf ("SYNOPSIS: dynlb max_domain_size\n");
-    return 1;
-  }
+  n = rand() % max_points_per_rank + 1;
 
-  n = rand() % m + 1;
+  if (rank == 0) printf ("Generating random points in unit cube...\n");
+
+  timerstart (&t);
+
+  printf ("Generating %d points on rank %d.\n", n, rank);
 
   ERRMEM (point[0] = malloc (n * sizeof (REAL)));
   ERRMEM (point[1] = malloc (n * sizeof (REAL)));
   ERRMEM (point[2] = malloc (n * sizeof (REAL)));
+  ERRMEM (velo[0] = malloc (n * sizeof (REAL)));
+  ERRMEM (velo[1] = malloc (n * sizeof (REAL)));
+  ERRMEM (velo[2] = malloc (n * sizeof (REAL)));
   ERRMEM (ranks = malloc (n * sizeof (int)));
 
   for (i = 0; i < n; i ++)
@@ -59,36 +93,83 @@ int main (int argc, char *argv[])
     point[0][i] = DRAND();
     point[1][i] = DRAND();
     point[2][i] = DRAND();
+    velo[0][i] = DRAND()-0.5;
+    velo[1][i] = DRAND()-0.5;
+    velo[2][i] = DRAND()-0.5;
   }
 
-#if 0
-  dynlb_morton_balance (n, point, ranks);
+  dt[0] = ptimerend (&t);
 
-  printf ("rank %d size %d export ranks: ", rank, n);
+  if (rank == 0) printf ("Generating points took %g sec.\n", dt[0]);
 
-  for (i = 0; i < n; i ++)
+  if (rank == 0) printf ("Timing %d simple morton based balancing steps...\n", num_time_steps, dt[0]);
+
+  for (i = 0, dt[0] = 0.0, dt[1] = 0.0; i < num_time_steps; i ++)
   {
-    printf ("%d ", ranks[i]);
+    timerstart (&t);
+
+    dynlb_morton_balance (n, point, ranks);
+
+    dt[0] += timerend (&t);
+
+    if (rank == 0) printf ("."), fflush (stdout);
+
+    timerstart (&t);
+
+    unit_cube_step (0, n, point, velo, time_step);
+
+    dt[1] += timerend (&t);
   }
 
-  printf ("\n");
-#else
-  printf ("rank %d n = %d\n", rank, n);
+  MPI_Allreduce (dt, gt, 2, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+  gt[0] /= (double)size * (double)num_time_steps;
+  gt[1] /= (double)size * (double)num_time_steps;
+
+  if (rank == 0) printf ("\nMORTON: avg. integration: %g sec. per step, avg. balancing: %g sec. per step; ratio: %g\n", gt[0]+gt[1], gt[1], gt[1]/(gt[0]+gt[1]));
+
+  if (rank == 0) printf ("Creating partitioning tree based balancer ...\n");
+
+  timerstart (&t);
 
   struct dynlb *lb = dynlb_create (0, n, point, 0, 0.5, DYNLB_RCB_TREE);
 
-  if (rank == 0) printf ("dynlb initial balance = %g\n", lb->initial);
+  dt[0] += ptimerend (&t);
 
-  dynlb_update (lb, n, point);
+  if (rank == 0) printf ("Took %g sec.\nInitial imbalance %g\n", dt[0], lb->initial);
 
-  if (rank == 0) printf ("dynlb updated balance = %g\n", lb->imbalance);
+  if (rank == 0) printf ("Timing %d partitioning tree based balancing steps...\n", num_time_steps, dt[0]);
 
-  printf ("rank %d npoint = %d\n", rank, lb->npoint);
-#endif
+  for (i = 0, dt[0] = 0.0, dt[1] = 0.0; i < num_time_steps; i ++)
+  {
+    timerstart (&t);
+
+    dynlb_update (lb, n, point);
+
+    dt[0] += timerend (&t);
+
+    if (rank == 0) printf ("Step %d imbalance %g\n", i, lb->imbalance);
+
+    timerstart (&t);
+
+    unit_cube_step (0, n, point, velo, time_step);
+
+    dt[1] += timerend (&t);
+  }
+
+  MPI_Allreduce (dt, gt, 2, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+  gt[0] /= (double)size * (double)num_time_steps;
+  gt[1] /= (double)size * (double)num_time_steps;
+
+  if (rank == 0) printf ("TREE: avg. integration: %g sec. per step, avg. balancing: %g sec. per step; ratio: %g\n", gt[0]+gt[1], gt[1], gt[1]/(gt[0]+gt[1]));
 
   free (point[0]);
   free (point[1]);
   free (point[2]);
+  free (velo[0]);
+  free (velo[1]);
+  free (velo[2]);
   free (ranks);
 
   MPI_Finalize ();

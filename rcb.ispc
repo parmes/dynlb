@@ -65,7 +65,7 @@ static void leaf_count (uniform rcb_tree tree[], uniform int node, uniform int *
   else (*i) ++;
 }
 
-/* O(n) split of point[] such that point[d][i<k] < point[d][i>=k]; other dimensions are copied accordingly */
+/* O(n) split of point[] such that point[d][i<k] <= point[d][i>=k]; other dimensions are copied accordingly */
 static uniform REAL quick_split (uniform int n, uniform REAL * uniform point[3], uniform int d, uniform int k)
 {
   uniform REAL pivot = point[d][n/2]; /* random index might be more effective; XXX */
@@ -92,34 +92,30 @@ static uniform REAL quick_split (uniform int n, uniform REAL * uniform point[3],
 
   while (i < j)
   {
-    while (i < j && point[d][i] < pivot) i++;
-    while (i < j && point[d][j] >= pivot) j--;
+    while (i < j && point[d][i] <= pivot) i++;
+    while (i < j && point[d][j] > pivot) j--;
 
-    uniform REAL temp = point[d][i];
-    point[d][i] = point[d][j];
-    point[d][j] = temp;
+    if (i < j)
+    {
+      uniform REAL temp = point[d][i];
+      point[d][i] = point[d][j];
+      point[d][j] = temp;
 
-    temp = point[d1][i];
-    point[d1][i] = point[d1][j];
-    point[d1][j] = temp;
+      temp = point[d1][i];
+      point[d1][i] = point[d1][j];
+      point[d1][j] = temp;
 
-    temp = point[d2][i];
-    point[d2][i] = point[d2][j];
-    point[d2][j] = temp;
+      temp = point[d2][i];
+      point[d2][i] = point[d2][j];
+      point[d2][j] = temp;
+    }
   }
-
-  print ("quick split stopped at i = % for k = % and n = %\n", i, k, n);
 
   if (i == k) return pivot;
-  else if (i > k)
-  {
-    print ("go left\n");
-    return quick_split (i, point, d, k);
-  }
+  else if (i > k) return quick_split (i, point, d, k);
   else
   {
     uniform REAL * uniform rpoint[3] = {point[0]+i, point[1]+i, point[2]+i};
-    print ("go right\n");
     return quick_split (n-i, rpoint, d, k-i);
   }
 }
@@ -136,8 +132,6 @@ task void rcb_tree_task (uniform int ntasks, uniform int n, uniform REAL * unifo
     extents[1] = extents[4] - extents[1];
     extents[2] = extents[5] - extents[2];
 
-    print ("extents = %, %, %\n", extents[0], extents[1], extents[2]);
-
     uniform int dimension = 0;
 
     if (extents[1] > extents[0]) dimension = 1;
@@ -145,22 +139,14 @@ task void rcb_tree_task (uniform int ntasks, uniform int n, uniform REAL * unifo
 
     tree[node].dimension = dimension;
 
-    print ("dimension = %\n", dimension);
-
     uniform int left_count = 0, right_count = 0;
 
     leaf_count (tree, tree[node].left, &left_count);
     leaf_count (tree, tree[node].right, &right_count);
 
-    print ("left_count = %, right count = %\n", left_count, right_count);
-
-    uniform int k = (n * left_count) / (left_count + right_count);
-
-    print ("split at k = % out of n = %\n", k, n);
+    uniform int k = (REAL) n * (REAL) left_count / (REAL) (left_count + right_count);
 
     tree[node].coord = quick_split (n, point, dimension, k);
-
-    print ("split at coord = %\n", tree[node].coord);
 
     uniform REAL * uniform rpoint[3] = {point[0]+k, point[1]+k, point[2]+k};
 
