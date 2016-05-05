@@ -102,7 +102,7 @@ int main (int argc, char *argv[])
 
   if (rank == 0) printf ("Generating points took %g sec.\n", dt[0]);
 
-  if (rank == 0) printf ("Timing %d simple morton based balancing steps...\n", num_time_steps, dt[0]);
+  if (rank == 0) printf ("Timing %d simple morton based balancing steps...\n", num_time_steps);
 
   for (i = 0, dt[0] = 0.0, dt[1] = 0.0; i < num_time_steps; i ++)
   {
@@ -138,7 +138,7 @@ int main (int argc, char *argv[])
 
   if (rank == 0) printf ("Took %g sec.\nInitial imbalance %g\n", dt[0], lb->initial);
 
-  if (rank == 0) printf ("Timing %d partitioning tree based balancing steps...\n", num_time_steps, dt[0]);
+  if (rank == 0) printf ("Timing %d partitioning tree based balancing steps...\n", num_time_steps);
 
   for (i = 0, dt[0] = 0.0, dt[1] = 0.0; i < num_time_steps; i ++)
   {
