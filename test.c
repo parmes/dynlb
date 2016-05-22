@@ -56,7 +56,7 @@ int main (int argc, char *argv[])
 
   if (argc == 1)
   {
-    printf ("SYNOPSIS: dynlb max_points_per_rank [num_time_steps = 100] [time_step = 0.001]\n");
+    printf ("SYNOPSIS: test_dynlb max_points_per_rank [num_time_steps = 100] [time_step = 0.001]\n");
     return 0;
   }
 
