@@ -30,7 +30,7 @@ SOFTWARE.
 #endif
 
 /* real type */
-#if REALE==4
+#if REAL==4
 #undef REAL
 #define REAL float
 #define MPI_REAL MPI_FLOAT
