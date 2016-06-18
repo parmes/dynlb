@@ -1,0 +1,3 @@
+objs/*
+libdynlb.a
+test_dynlb
