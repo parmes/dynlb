@@ -38,13 +38,12 @@ struct dynlb /* load balancer interface */
 {
   int ntasks; /* number of taks used; 0 means use hardware optimum */
   int cutoff; /* partitioning tree cutoff; 0 means use default selection */
-  REAL epsilon; /* imbalance epsilon; rebalance when current imbalance > initial imbalance + epsilon */
+  REAL epsilon; /* imbalance epsilon; rebalance when imbalance > 1.0 + epsilon */
   enum dynlb_part part; /* partitioning type */
 
   void *ptree; /* partitioning tree; used internally */
   int ptree_size; /* partitioning tree size; used internally */
 
-  REAL initial; /* initial imbalance */
   REAL imbalance; /* current imbalance */
   int npoint; /* current number of points on this MPI rank */
 };

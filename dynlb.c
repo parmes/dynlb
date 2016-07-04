@@ -231,7 +231,7 @@ struct dynlb* dynlb_create (int ntasks, int n, REAL *point[3], int cutoff, REAL 
 
     partitioning_store (ntasks, ptree, gn, gpoint);
 
-#if 0
+#if 1
     printf ("Leaf count: %d\n", leaf_count);
 
     printf ("Leaf ranks: ");
@@ -255,7 +255,7 @@ struct dynlb* dynlb_create (int ntasks, int n, REAL *point[3], int cutoff, REAL 
     printf ("\n");
 #endif
 
-    /* determine initial balance */
+    /* determine initial imbalance */
 
     for (i = 0; i < lb->ptree_size; i ++)
     {
@@ -273,10 +273,9 @@ struct dynlb* dynlb_create (int ntasks, int n, REAL *point[3], int cutoff, REAL 
       max_size = MAX (max_size, rank_size[i]);
     }
 
-    lb->initial = (REAL)max_size/(REAL)min_size;
+    lb->imbalance = (REAL)max_size/(REAL)min_size;
 
-    lb->imbalance = lb->initial;
-
+    if (isnan(lb->imbalance)) lb->imbalance = (REAL)1/(REAL)0; /* inf istead */
   }
 
   /* broadcast ptree_size and initial imbalance */
@@ -369,7 +368,8 @@ void dynlb_update (struct dynlb *lb, int n, REAL *point[3])
 
   free (rank_size);
 
-  if (lb->imbalance > lb->initial+lb->epsilon) /* update partitioning */
+  if (isnan (lb->imbalance) || isinf(lb->imbalance) ||
+      lb->imbalance > 1.0 + lb->epsilon) /* update partitioning */
   {
     struct dynlb *dy = dynlb_create (lb->ntasks, n, point, lb->cutoff, lb->epsilon, lb->part);
 
@@ -377,7 +377,6 @@ void dynlb_update (struct dynlb *lb, int n, REAL *point[3])
     lb->ptree = dy->ptree;
     lb->ptree_size = dy->ptree_size;
 
-    lb->initial = dy->initial;
     lb->imbalance = dy->imbalance;
     lb->npoint = dy->npoint;
 

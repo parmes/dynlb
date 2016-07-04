@@ -138,7 +138,7 @@ int main (int argc, char *argv[])
 
   dt[0] += ptimerend (&t);
 
-  if (rank == 0) printf ("Took %g sec.\nInitial imbalance %g\n", dt[0], lb->initial);
+  if (rank == 0) printf ("Took %g sec.\nInitial imbalance %g\n", dt[0], lb->imbalance);
 
   if (rank == 0) printf ("Timing %d partitioning tree based balancing steps...\n", num_time_steps);
 
