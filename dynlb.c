@@ -231,7 +231,7 @@ struct dynlb* dynlb_create (int ntasks, int n, REAL *point[3], int cutoff, REAL 
 
     partitioning_store (ntasks, ptree, gn, gpoint);
 
-#if 1
+#if 0
     printf ("Leaf count: %d\n", leaf_count);
 
     printf ("Leaf ranks: ");
