@@ -16,17 +16,14 @@ ISPC_SRC=alloc.ispc sort.ispc morton.ispc radix.ispc rcb.ispc part.ispc simu.isp
 # ISPC targets
 ISPC_TARGETS=sse2,sse4,avx
 
+# Debug version
+DEBUG=no
+
 # Library name
 LIB=libdynlb
 
 # Program name
 EXE=test_dynlb
-
-# Floating point type
-REAL=double
-
-# Debug version
-DEBUG=no
 
 # Do the rest
 include common.mk
