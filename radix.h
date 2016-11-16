@@ -37,10 +37,10 @@ struct radix_tree /* binary space partitioning radix tree */
 };
 
 /* create radix tree */
-export uniform radix_tree * uniform radix_tree_create (uniform int ntasks, uniform int n,
+uniform radix_tree * uniform radix_tree_create (uniform int ntasks, uniform int n,
   uniform REAL * uniform point[3], uniform int cutoff, uniform int * uniform tree_size);
 
 /* destroy radix tree */
-export void radix_tree_destroy (uniform radix_tree * uniform rtree);
+void radix_tree_destroy (uniform radix_tree * uniform rtree);
 
 #endif

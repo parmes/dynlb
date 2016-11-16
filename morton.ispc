@@ -28,7 +28,7 @@ SOFTWARE.
 typedef unsigned int uint;
 
 /* calculate extrema of x, y, z */
-task void extrema (uniform int span, uniform int n, uniform REAL x[], uniform REAL y[], uniform REAL z[], uniform REAL extents[])
+task void _dynlb_extrema (uniform int span, uniform int n, uniform REAL x[], uniform REAL y[], uniform REAL z[], uniform REAL extents[])
 {
   uniform int start = taskIndex*span;
   uniform int end = taskIndex == taskCount-1 ? n : start+span;
@@ -68,7 +68,7 @@ inline uint expandbits(uint v)
 
 /* Calculates a 30-bit Morton code for the given 3D point located within the unit cube [0,1] */
 /* https://developer.nvidia.com/content/thinking-parallel-part-iii-tree-construction-gpu */
-task void morton (uniform int span, uniform int n, uniform REAL x[], uniform REAL y[], uniform REAL z[], uniform REAL extents[], uniform uint code[])
+task void _dynlb_morton (uniform int span, uniform int n, uniform REAL x[], uniform REAL y[], uniform REAL z[], uniform REAL extents[], uniform uint code[])
 {
   uniform int start = taskIndex*span;
   uniform int end = taskIndex == taskCount-1 ? n : start+span;
@@ -96,14 +96,14 @@ task void morton (uniform int span, uniform int n, uniform REAL x[], uniform REA
 }
 
 /* morton ordering */
-export void morton_ordering (uniform int ntasks, uniform int n, uniform REAL * uniform point[3], uniform unsigned int code[], uniform int order[])
+export void _dynlb_morton_ordering (uniform int ntasks, uniform int n, uniform REAL * uniform point[3], uniform unsigned int code[], uniform int order[])
 {
   uniform int num = ntasks < 1 ? num_cores () : ntasks;
   uniform int span = n / num;
 
   uniform REAL * uniform extents = uniform new uniform REAL [6*num];
 
-  launch[num] extrema (span, n, point[0], point[1], point[2], extents);
+  launch[num] _dynlb_extrema (span, n, point[0], point[1], point[2], extents);
   sync;
 
   for (uniform int i = 1; i < num; i ++)
@@ -118,7 +118,7 @@ export void morton_ordering (uniform int ntasks, uniform int n, uniform REAL * u
     if (e[5] > extents[5]) extents[5] = e[5];
   }
 
-  launch[num] morton (span, n, point[0], point[1], point[2], extents, code);
+  launch[num] _dynlb_morton (span, n, point[0], point[1], point[2], extents, code);
   sync;
 
   foreach (k = 0 ... n) order[k] = k;
@@ -130,14 +130,14 @@ export void morton_ordering (uniform int ntasks, uniform int n, uniform REAL * u
 }
 
 /* task based and vectorized extents of points */
-export void extents_of_points (uniform int ntasks, uniform int n, uniform REAL * uniform point[3], uniform REAL extents[])
+void extents_of_points (uniform int ntasks, uniform int n, uniform REAL * uniform point[3], uniform REAL extents[])
 {
   uniform int num = ntasks < 1 ? num_cores () : ntasks;
   uniform int span = n / num;
 
   uniform REAL * uniform task_extents = uniform new uniform REAL [6*num];
 
-  launch[num] extrema (span, n, point[0], point[1], point[2], task_extents);
+  launch[num] _dynlb_extrema (span, n, point[0], point[1], point[2], task_extents);
   sync;
 
   extents[0] = task_extents[0];

@@ -26,9 +26,9 @@ SOFTWARE.
 #define __morton__
 
 /* morton ordering */
-export void morton_ordering (uniform int ntasks, uniform int n, uniform REAL * uniform point[3], uniform unsigned int code[], uniform int order[]);
+export void _dynlb_morton_ordering (uniform int ntasks, uniform int n, uniform REAL * uniform point[3], uniform unsigned int code[], uniform int order[]);
 
 /* task based and vectorized extents of points */
-export void extents_of_points (uniform int ntasks, uniform int n, uniform REAL * uniform point[3], uniform REAL extents[]);
+void extents_of_points (uniform int ntasks, uniform int n, uniform REAL * uniform point[3], uniform REAL extents[]);
 
 #endif

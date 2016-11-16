@@ -34,11 +34,11 @@ struct rcb_tree /* binary space partitioning recurisve bisection tree */
 };
 
 /* create rcb tree; uniformly bisect untill leaf size <= cutoff; or if cutoff < 0 then create -cutoff equal size leaves */
-export uniform rcb_tree * uniform rcb_tree_create (uniform int ntasks, uniform int n,
+uniform rcb_tree * uniform rcb_tree_create (uniform int ntasks, uniform int n,
   uniform REAL * uniform point[3], uniform int cutoff, uniform int * uniform tree_size);
 
 /* destroy rcb tree */
-export void rcb_tree_destroy (uniform rcb_tree * uniform rcbtree);
+void rcb_tree_destroy (uniform rcb_tree * uniform rcbtree);
 
 #endif
 

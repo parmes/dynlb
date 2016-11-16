@@ -25,36 +25,36 @@ SOFTWARE.
 #include "macros.h"
 
 /* aligned real allocator */
-export uniform REAL * uniform  aligned_real_alloc (uniform int n)
+export uniform REAL * uniform  _dynlb_aligned_real_alloc (uniform int n)
 {
   return uniform new uniform REAL [n];
 }
 
-export void aligned_real_free (uniform REAL * uniform ptr)
+export void _dynlb_aligned_real_free (uniform REAL * uniform ptr)
 {
   delete ptr;
 }
 
 /* aligned int allocator */
-export uniform int * uniform  aligned_int_alloc (uniform int n)
+export uniform int * uniform  _dynlb_aligned_int_alloc (uniform int n)
 {
   return uniform new uniform int [n];
 }
 
-export void aligned_int_free (uniform int * uniform ptr)
+export void _dynlb_aligned_int_free (uniform int * uniform ptr)
 {
   delete ptr;
 }
 
 /* aligned unsigned int allocator */
-export uniform unsigned int * uniform  aligned_uint_alloc (uniform int n)
+export uniform unsigned int * uniform  _dynlb_aligned_uint_alloc (uniform int n)
 {
   typedef unsigned int uint;
 
   return uniform new uniform uint [n];
 }
 
-export void aligned_uint_free (uniform unsigned int * uniform ptr)
+export void _dynlb_aligned_uint_free (uniform unsigned int * uniform ptr)
 {
   delete ptr;
 }

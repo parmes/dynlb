@@ -180,7 +180,7 @@ static void radix_tree_size (uniform radix_tree tree[], uniform int node, unifor
 }
 
 /* create radix tree */
-export uniform radix_tree * uniform radix_tree_create (uniform int ntasks, uniform int n,
+uniform radix_tree * uniform radix_tree_create (uniform int ntasks, uniform int n,
   uniform REAL * uniform point[3], uniform int cutoff, uniform int * uniform tree_size)
 {
   uniform int num = ntasks < 1 ? num_cores () : ntasks;
@@ -190,7 +190,7 @@ export uniform radix_tree * uniform radix_tree_create (uniform int ntasks, unifo
 
   uniform int * uniform order = uniform new uniform int [n];
 
-  morton_ordering (ntasks, n, point, code, order);
+  _dynlb_morton_ordering (ntasks, n, point, code, order);
 
   uniform radix_tree * uniform tree = uniform new uniform radix_tree [n];
 
@@ -208,7 +208,7 @@ export uniform radix_tree * uniform radix_tree_create (uniform int ntasks, unifo
 }
 
 /* destroy radix tree */
-export void radix_tree_destroy (uniform radix_tree * uniform tree)
+void radix_tree_destroy (uniform radix_tree * uniform tree)
 {
   delete tree;
 }

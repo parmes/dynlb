@@ -35,9 +35,9 @@
 #define __sort__
 
 /* parallel radix sort on unsigned integers */
-export void radix_sort (uniform int ntasks, uniform int n, uniform unsigned int code[], uniform int order[]);
+void radix_sort (uniform int ntasks, uniform int n, uniform unsigned int code[], uniform int order[]);
 
 /* serial quick sort on unsigned integers */
-export void quick_sort (uniform int n, uniform unsigned int a[], uniform int order[]);
+void quick_sort (uniform int n, uniform unsigned int a[], uniform int order[]);
 
 #endif

@@ -67,9 +67,9 @@ void dynlb_morton_balance (int n, REAL *point[3], int ranks[])
       gn += vn[i];
     }
 
-    ERRMEM (gpoint[0] = aligned_real_alloc (gn));
-    ERRMEM (gpoint[1] = aligned_real_alloc (gn));
-    ERRMEM (gpoint[2] = aligned_real_alloc (gn));
+    ERRMEM (gpoint[0] = _dynlb_aligned_real_alloc (gn));
+    ERRMEM (gpoint[1] = _dynlb_aligned_real_alloc (gn));
+    ERRMEM (gpoint[2] = _dynlb_aligned_real_alloc (gn));
   }
 
   MPI_Gatherv (point[0], n, MPI_REAL, gpoint[0], vn, dn, MPI_REAL, 0, MPI_COMM_WORLD);
@@ -78,13 +78,13 @@ void dynlb_morton_balance (int n, REAL *point[3], int ranks[])
 
   if (rank == 0)
   {
-    ERRMEM (gcode = aligned_uint_alloc (gn));
+    ERRMEM (gcode = _dynlb_aligned_uint_alloc (gn));
 
-    ERRMEM (gorder = aligned_int_alloc (gn));
+    ERRMEM (gorder = _dynlb_aligned_int_alloc (gn));
 
-    morton_ordering (0, gn, gpoint, gcode, gorder);
+    _dynlb_morton_ordering (0, gn, gpoint, gcode, gorder);
 
-    ERRMEM (granks = aligned_int_alloc (gn));
+    ERRMEM (granks = _dynlb_aligned_int_alloc (gn));
 
     m = gn / size;
 
@@ -139,12 +139,12 @@ void dynlb_morton_balance (int n, REAL *point[3], int ranks[])
 
   if (rank == 0)
   {
-    aligned_int_free (granks);
-    aligned_int_free (gorder);
-    aligned_uint_free (gcode);
-    aligned_real_free (gpoint[0]);
-    aligned_real_free (gpoint[1]);
-    aligned_real_free (gpoint[2]);
+    _dynlb_aligned_int_free (granks);
+    _dynlb_aligned_int_free (gorder);
+    _dynlb_aligned_uint_free (gcode);
+    _dynlb_aligned_real_free (gpoint[0]);
+    _dynlb_aligned_real_free (gpoint[1]);
+    _dynlb_aligned_real_free (gpoint[2]);
     free (dn);
     free (vn);
   }
@@ -190,9 +190,9 @@ struct dynlb* dynlb_create (int ntasks, int n, REAL *point[3], int cutoff, REAL 
       gn += vn[i];
     }
 
-    ERRMEM (gpoint[0] = aligned_real_alloc (gn));
-    ERRMEM (gpoint[1] = aligned_real_alloc (gn));
-    ERRMEM (gpoint[2] = aligned_real_alloc (gn));
+    ERRMEM (gpoint[0] = _dynlb_aligned_real_alloc (gn));
+    ERRMEM (gpoint[1] = _dynlb_aligned_real_alloc (gn));
+    ERRMEM (gpoint[2] = _dynlb_aligned_real_alloc (gn));
   }
 
   MPI_Gatherv (point[0], n, MPI_REAL, gpoint[0], vn, dn, MPI_REAL, 0, MPI_COMM_WORLD);
@@ -212,7 +212,7 @@ struct dynlb* dynlb_create (int ntasks, int n, REAL *point[3], int cutoff, REAL 
 	cutoff = gn/size/64; /* more than 64 drives initial imbalance down while increasing local tree size */
       }
 
-      ptree = partitioning_create_radix (ntasks, gn, gpoint, cutoff, &lb->ptree_size, &leaf_count);
+      ptree = _dynlb_partitioning_create_radix (ntasks, gn, gpoint, cutoff, &lb->ptree_size, &leaf_count);
 
       break;
     case DYNLB_RCB_TREE:
@@ -222,14 +222,14 @@ struct dynlb* dynlb_create (int ntasks, int n, REAL *point[3], int cutoff, REAL 
 	cutoff = -size; /* as many leaves as ranks by default */
       }
 
-      ptree = partitioning_create_rcb (ntasks, gn, gpoint, cutoff, &lb->ptree_size, &leaf_count);
+      ptree = _dynlb_partitioning_create_rcb (ntasks, gn, gpoint, cutoff, &lb->ptree_size, &leaf_count);
 
       break;
     }
 
-    partitioning_assign_ranks (ptree, leaf_count / size, leaf_count % size);
+    _dynlb_partitioning_assign_ranks (ptree, leaf_count / size, leaf_count % size);
 
-    partitioning_store (ntasks, ptree, gn, gpoint);
+    _dynlb_partitioning_store (ntasks, ptree, gn, gpoint);
 
 #if 0
     printf ("Leaf count: %d\n", leaf_count);
@@ -292,7 +292,7 @@ struct dynlb* dynlb_create (int ntasks, int n, REAL *point[3], int cutoff, REAL 
   }
   else
   {
-    lb->ptree = partitioning_alloc (lb->ptree_size);
+    lb->ptree = _dynlb_partitioning_alloc (lb->ptree_size);
   }
 
   /* broadcast ptree */
@@ -300,9 +300,9 @@ struct dynlb* dynlb_create (int ntasks, int n, REAL *point[3], int cutoff, REAL 
 
   if (rank == 0)
   {
-    aligned_real_free (gpoint[0]);
-    aligned_real_free (gpoint[1]);
-    aligned_real_free (gpoint[2]);
+    _dynlb_aligned_real_free (gpoint[0]);
+    _dynlb_aligned_real_free (gpoint[1]);
+    _dynlb_aligned_real_free (gpoint[2]);
     free (dn);
     free (vn);
   }
@@ -315,7 +315,7 @@ struct dynlb* dynlb_create (int ntasks, int n, REAL *point[3], int cutoff, REAL 
 /* assign an MPI rank to a point; return this rank */
 int dynlb_point_assign (struct dynlb *lb, REAL point[])
 {
-  return partitioning_point_assign (lb->ptree, 0, point);
+  return _dynlb_partitioning_point_assign (lb->ptree, 0, point);
 }
 
 /* assign MPI ranks to a box spanned between lo and hi points; return the number of ranks assigned */
@@ -323,7 +323,7 @@ int dynlb_box_assign (struct dynlb *lb, REAL lo[], REAL hi[], int ranks[])
 {
   int count = 0;
 
-  partitioning_box_assign (lb->ptree, 0, lo, hi, ranks, &count);
+  _dynlb_partitioning_box_assign (lb->ptree, 0, lo, hi, ranks, &count);
 
   return count;
 }
@@ -337,7 +337,7 @@ void dynlb_update (struct dynlb *lb, int n, REAL *point[3])
   MPI_Comm_size (MPI_COMM_WORLD, &size);
   MPI_Comm_rank (MPI_COMM_WORLD, &rank);
 
-  partitioning_store (lb->ntasks, ptree, n, point);
+  _dynlb_partitioning_store (lb->ntasks, ptree, n, point);
 
   ERRMEM (local_size = calloc (size, sizeof (int)));
 
@@ -373,7 +373,7 @@ void dynlb_update (struct dynlb *lb, int n, REAL *point[3])
   {
     struct dynlb *dy = dynlb_create (lb->ntasks, n, point, lb->cutoff, lb->epsilon, lb->part);
 
-    partitioning_destroy (lb->ptree);
+    _dynlb_partitioning_destroy (lb->ptree);
     lb->ptree = dy->ptree;
     lb->ptree_size = dy->ptree_size;
 
@@ -387,6 +387,6 @@ void dynlb_update (struct dynlb *lb, int n, REAL *point[3])
 /* destroy load balancer */
 void dynlb_destroy (struct dynlb *lb)
 {
-  partitioning_destroy (lb->ptree);
+  _dynlb_partitioning_destroy (lb->ptree);
   free (lb);
 }

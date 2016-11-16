@@ -161,7 +161,7 @@ task void store_points (uniform int span, uniform partitioning ptree[], uniform 
 }
 
 /* assign ranks to partitioning tree leaves */
-export void assign_ranks (uniform partitioning * uniform ptree, uniform int node,
+static void assign_ranks (uniform partitioning * uniform ptree, uniform int node,
   uniform int leaves_per_rank, uniform int * uniform remainder,
   uniform int * uniform leaf, uniform int * uniform rank)
 {
@@ -190,7 +190,7 @@ export void assign_ranks (uniform partitioning * uniform ptree, uniform int node
 }
 
 /* create partitioning tree based on radix tree */
-export uniform partitioning * uniform partitioning_create_radix (uniform int ntasks, uniform int n, uniform REAL * uniform point[3],
+export uniform partitioning * uniform _dynlb_partitioning_create_radix (uniform int ntasks, uniform int n, uniform REAL * uniform point[3],
   uniform int cutoff, uniform int * uniform tree_size, uniform int * uniform leaf_count)
 {
   uniform radix_tree * uniform rtree = radix_tree_create (ntasks, n, point, cutoff, tree_size);
@@ -209,7 +209,7 @@ export uniform partitioning * uniform partitioning_create_radix (uniform int nta
 }
 
 /* create partitioning tree based on rcb tree */
-export uniform partitioning * uniform partitioning_create_rcb (uniform int ntasks, uniform int n, uniform REAL * uniform point[3],
+export uniform partitioning * uniform _dynlb_partitioning_create_rcb (uniform int ntasks, uniform int n, uniform REAL * uniform point[3],
   uniform int cutoff, uniform int * uniform tree_size, uniform int * uniform leaf_count)
 {
   uniform rcb_tree * uniform rcbtree = rcb_tree_create (ntasks, n, point, cutoff, tree_size);
@@ -228,7 +228,7 @@ export uniform partitioning * uniform partitioning_create_rcb (uniform int ntask
 }
 
 /* allocate partitioning tree memory */
-export uniform partitioning * uniform partitioning_alloc (uniform int tree_size)
+export uniform partitioning * uniform _dynlb_partitioning_alloc (uniform int tree_size)
 {
   uniform partitioning * uniform ptree = uniform new uniform partitioning[tree_size];
 
@@ -236,7 +236,7 @@ export uniform partitioning * uniform partitioning_alloc (uniform int tree_size)
 }
 
 /* assign ranks to partitioning tree leaves */
-export void partitioning_assign_ranks (uniform partitioning * uniform ptree, uniform int leaves_per_rank, uniform int remainder)
+export void _dynlb_partitioning_assign_ranks (uniform partitioning * uniform ptree, uniform int leaves_per_rank, uniform int remainder)
 {
   uniform int leaf = 0;
 
@@ -246,7 +246,7 @@ export void partitioning_assign_ranks (uniform partitioning * uniform ptree, uni
 }
 
 /* store points in the partitioning tree leaves */
-export void partitioning_store (uniform int ntasks, uniform partitioning * uniform ptree, uniform int n, uniform REAL * uniform point[3])
+export void _dynlb_partitioning_store (uniform int ntasks, uniform partitioning * uniform ptree, uniform int n, uniform REAL * uniform point[3])
 {
   uniform int num = ntasks < 1 ? num_cores () : ntasks;
 
@@ -256,15 +256,15 @@ export void partitioning_store (uniform int ntasks, uniform partitioning * unifo
 }
 
 /* assign leaf rank to a point */
-export uniform int partitioning_point_assign (uniform partitioning ptree[], uniform int node, uniform REAL point[])
+export uniform int _dynlb_partitioning_point_assign (uniform partitioning ptree[], uniform int node, uniform REAL point[])
 {
   uniform int d = ptree[node].dimension;
 
   if (d >= 0) /* node */
   {
     if (point[d] < ptree[node].coord) /* "<" is congruent with the selection of coord in radix_tree_task */
-      return partitioning_point_assign (ptree, ptree[node].left, point);
-    else return partitioning_point_assign (ptree, ptree[node].right, point);
+      return _dynlb_partitioning_point_assign (ptree, ptree[node].left, point);
+    else return _dynlb_partitioning_point_assign (ptree, ptree[node].right, point);
   }
   else /* leaf */
   {
@@ -273,7 +273,7 @@ export uniform int partitioning_point_assign (uniform partitioning ptree[], unif
 }
 
 /* assign leaf ranks to a box */
-export void partitioning_box_assign (uniform partitioning ptree[], uniform int node,
+export void _dynlb_partitioning_box_assign (uniform partitioning ptree[], uniform int node,
   uniform REAL lo[], uniform REAL hi[], uniform int ranks[], uniform int * uniform rank_count)
 {
   uniform int d = ptree[node].dimension;
@@ -281,9 +281,9 @@ export void partitioning_box_assign (uniform partitioning ptree[], uniform int n
   if (d >= 0) /* node */
   {
     if (lo[d] < ptree[node].coord) /* "<" is congruent with the selection of coord in radix_tree_task */
-      partitioning_box_assign (ptree, ptree[node].left, lo, hi, ranks, rank_count);
+      _dynlb_partitioning_box_assign (ptree, ptree[node].left, lo, hi, ranks, rank_count);
     if (hi[d] > ptree[node].coord)
-      partitioning_box_assign (ptree, ptree[node].right, lo, hi, ranks, rank_count);
+      _dynlb_partitioning_box_assign (ptree, ptree[node].right, lo, hi, ranks, rank_count);
   }
   else /* leaf */
   {
@@ -303,7 +303,7 @@ export void partitioning_box_assign (uniform partitioning ptree[], uniform int n
 }
 
 /* destroy partitioning tree */
-export void partitioning_destroy (uniform partitioning * uniform ptree)
+export void _dynlb_partitioning_destroy (uniform partitioning * uniform ptree)
 {
   delete ptree;
 }

@@ -158,7 +158,7 @@ task void rcb_tree_task (uniform int ntasks, uniform int n, uniform REAL * unifo
 }
 
 /* create rcb tree; uniformly bisect untill leaf size <= cutoff; or if cutoff < 0 then create -cutoff equal size leaves */
-export uniform rcb_tree * uniform rcb_tree_create (uniform int ntasks, uniform int n,
+uniform rcb_tree * uniform rcb_tree_create (uniform int ntasks, uniform int n,
   uniform REAL * uniform point[3], uniform int cutoff, uniform int * uniform tree_size)
 {
   *tree_size = 1;
@@ -194,7 +194,7 @@ export uniform rcb_tree * uniform rcb_tree_create (uniform int ntasks, uniform i
 }
 
 /* destroy rcb tree */
-export void rcb_tree_destroy (uniform rcb_tree * uniform tree)
+void rcb_tree_destroy (uniform rcb_tree * uniform tree)
 {
   delete tree;
 }
