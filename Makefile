@@ -1,8 +1,4 @@
-# C compiler
-CC=mpicc
-
-# C++ compiler
-CXX=mpicxx
+include Config.mak
 
 # C files
 C_SRC=dynlb.c
@@ -15,9 +11,6 @@ ISPC_SRC=alloc.ispc sort.ispc morton.ispc radix.ispc rcb.ispc part.ispc simu.isp
 
 # ISPC targets
 ISPC_TARGETS=sse2,sse4,avx
-
-# Debug version
-DEBUG=no
 
 # Library name
 LIB=libdynlb
