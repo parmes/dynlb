@@ -366,6 +366,7 @@ void dynlb_update (struct dynlb *lb, int n, REAL *point[3])
 
   lb->imbalance = (REAL)max_size/(REAL)min_size;
 
+  free (local_size);
   free (rank_size);
 
   if (isnan (lb->imbalance) || isinf(lb->imbalance) ||
