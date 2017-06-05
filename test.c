@@ -27,6 +27,7 @@ SOFTWARE.
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 #include <mpi.h>
 #include "macros.h"
 #include "dynlb.h"
