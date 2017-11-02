@@ -1,8 +1,8 @@
-# C compiler
-CC=mpicc
+# MPI C compiler
+MPICC=mpicc
 
-# C++ compiler
-CXX=mpicxx
+# MPI C++ compiler
+MPICXX=mpicxx
 
 # Debug version
 DEBUG=no

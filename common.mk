@@ -53,10 +53,10 @@ $(LIB)8.a: $(CPP_OBJS8) $(C_OBJS8) $(ISPC_OBJS8)
 	ranlib $@ 
 
 $(EXE)4: objs4/test.o $(CPP_OBJS4) $(C_OBJS4) $(ISPC_OBJS4)
-	$(CXX) $(CFLAGS) -fopenmp -o $@ $^ $(LIBS)
+	$(MPICXX) $(CFLAGS) -fopenmp -o $@ $^ $(LIBS)
 
 $(EXE)8: objs8/test.o $(CPP_OBJS8) $(C_OBJS8) $(ISPC_OBJS8)
-	$(CXX) $(CFLAGS) -fopenmp -o $@ $^ $(LIBS)
+	$(MPICXX) $(CFLAGS) -fopenmp -o $@ $^ $(LIBS)
 
 objs4/%_ispc.h objs4/%_ispc.o objs4/%_ispc_sse2.o objs4/%_ispc_sse4.o objs4/%_ispc_avx.o: %.ispc
 	$(ISPC) -DREAL=4 --target=$(ISPC_TARGETS) $< -o objs4/$*_ispc.o -h objs4/$*_ispc.h
@@ -65,19 +65,19 @@ objs8/%_ispc.h objs8/%_ispc.o objs8/%_ispc_sse2.o objs8/%_ispc_sse4.o objs8/%_is
 	$(ISPC) -DREAL=8 --target=$(ISPC_TARGETS) $< -o objs8/$*_ispc.o -h objs8/$*_ispc.h
 
 objs4/tasksys.o: tasksys.cpp
-	$(CXX) $(CFLAGS) -D ISPC_USE_OMP $< -c -o $@
+	$(MPICXX) $(CFLAGS) -D ISPC_USE_OMP $< -c -o $@
 
 objs8/tasksys.o: tasksys.cpp
-	$(CXX) $(CFLAGS) -D ISPC_USE_OMP $< -c -o $@
+	$(MPICXX) $(CFLAGS) -D ISPC_USE_OMP $< -c -o $@
 
 objs4/%.o: %.cpp $(ISPC_HEADERS4)
-	$(CXX) -DREAL=4 -Iobjs4 $(CFLAGS) $< -c -o $@
+	$(MPICXX) -DREAL=4 -Iobjs4 $(CFLAGS) $< -c -o $@
 
 objs8/%.o: %.cpp $(ISPC_HEADERS8)
-	$(CXX) -DREAL=8 -Iobjs8 $(CFLAGS) $< -c -o $@
+	$(MPICXX) -DREAL=8 -Iobjs8 $(CFLAGS) $< -c -o $@
 
 objs4/%.o: %.c $(ISPC_HEADERS4)
-	$(CC) -DREAL=4 -Iobjs4 $(CFLAGS) $< -c -o $@
+	$(MPICC) -DREAL=4 -Iobjs4 $(CFLAGS) $< -c -o $@
 
 objs8/%.o: %.c $(ISPC_HEADERS8)
-	$(CC) -DREAL=8 -Iobjs8 $(CFLAGS) $< -c -o $@
+	$(MPICC) -DREAL=8 -Iobjs8 $(CFLAGS) $< -c -o $@
